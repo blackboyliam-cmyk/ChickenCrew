@@ -733,8 +733,8 @@ export function parseAddress(input: AddressInput, fallbackPhone = ""): Omit<Addr
   const area = cleanText(input.area, 80);
   const city = cleanText(input.city, 80);
   const state = cleanText(input.state, 80);
-  if (!house || !street || !area || !city || !state) {
-    throw new ApiError(400, "House, street, area, city, and state are required.");
+  if (!house || !area || !city) {
+    throw new ApiError(400, "House, area, and city are required.");
   }
   return {
     label,
