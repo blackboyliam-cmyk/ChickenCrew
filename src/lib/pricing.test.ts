@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { amountInWords } from "./bill";
+import { distanceMeters, etaMinutes, formatDistance } from "./maps";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
 import { isIndianMobile, isPincode, normalizeMobile } from "./validators";
 import type { Coupon } from "./types";
@@ -79,4 +81,18 @@ test("indian mobile and pincode", () => {
   assert.equal(isIndianMobile("1234567890"), false);
   assert.equal(isPincode("682001"), true);
   assert.equal(isPincode("012345"), false);
+});
+
+test("bill amount in words", () => {
+  assert.equal(amountInWords(0), "Rupees Zero Only");
+  assert.equal(amountInWords(49900), "Rupees Four Hundred Ninety Nine Only");
+  assert.equal(amountInWords(125050), "Rupees One Thousand Two Hundred Fifty and Fifty Paise Only");
+  assert.equal(amountInWords(1234567800), "Rupees One Crore Twenty Three Lakh Forty Five Thousand Six Hundred Seventy Eight Only");
+});
+
+test("distance and eta", () => {
+  const meters = distanceMeters({ lat: 19.076, lng: 72.8777 }, { lat: 19.086, lng: 72.8777 });
+  assert.ok(meters > 1100 && meters < 1120);
+  assert.equal(formatDistance(850), "850 m");
+  assert.equal(etaMinutes(0), 2);
 });

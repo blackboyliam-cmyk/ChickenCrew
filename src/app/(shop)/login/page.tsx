@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Clock3, MapPin, RotateCcw } from "lucide-react";
+import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
 
 const PERKS = [
@@ -17,6 +18,7 @@ function SignIn() {
   const params = useSearchParams();
   const raw = params.get("next") || "/account";
   const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/account";
+  const error = params.get("error");
 
   return (
     <div className="flex justify-center py-6 md:py-12">
@@ -49,7 +51,13 @@ function SignIn() {
             <p className="mt-1.5 text-sm text-muted-foreground">
               New here? Just enter your number — we&apos;ll create your account.
             </p>
+            {error && (
+              <p className="mt-5 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+                {error === "google_off" ? "Google sign-in isn't set up yet. Use your mobile number." : "Google sign-in didn't finish. Please try again."}
+              </p>
+            )}
             <div className="mt-7">
+              <GoogleButton next={next} />
               <OtpForm onDone={() => router.push(next)} />
             </div>
           </div>

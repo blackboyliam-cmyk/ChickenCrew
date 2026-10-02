@@ -1,4 +1,5 @@
 import { isAdmin } from "@/lib/auth";
+import { loadRiderLocations } from "@/lib/db-backend";
 import { ApiError } from "@/lib/errors";
 import { handle, readJson } from "@/lib/http";
 import {
@@ -8,11 +9,14 @@ import {
   adminListOffers,
   adminListOrders,
   adminListProducts,
+  adminListRiders,
   adminListSlots,
+  adminOrderFeed,
   adminSaveCategory,
   adminSaveCoupon,
   adminSaveOffer,
   adminSaveProduct,
+  adminSaveRider,
   adminSaveSlot,
   adminUpdateSettings,
   getSettingsAdmin,
@@ -33,6 +37,11 @@ export const GET = handle(async (_req, ctx) => {
   if (resource === "orders") return { orders: adminListOrders() };
   if (resource === "customers") return { customers: adminCustomers() };
   if (resource === "settings") return { settings: getSettingsAdmin() };
+  if (resource === "order-feed") return { orders: adminOrderFeed() };
+  if (resource === "riders") {
+    const riders = adminListRiders();
+    return { riders, locations: await loadRiderLocations(riders.map((rider) => rider.id)) };
+  }
   throw new ApiError(404, "Not found.");
 });
 
@@ -46,5 +55,6 @@ export const POST = handle(async (req, ctx) => {
   if (resource === "coupons") return { coupon: adminSaveCoupon(body) };
   if (resource === "slots") return { slot: adminSaveSlot(body) };
   if (resource === "settings") return { settings: adminUpdateSettings(body) };
+  if (resource === "riders") return { rider: adminSaveRider(body) };
   throw new ApiError(404, "Not found.");
 });

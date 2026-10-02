@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 const SESSION = "cc_session";
 const ADMIN = "cc_admin";
 const CART = "cc_cart";
+const RIDER = "cc_rider";
+const OAUTH = "cc_oauth";
 
 function secret() {
   return process.env.AUTH_SECRET || "dev-insecure-secret-change-me";
@@ -73,6 +75,37 @@ export async function isAdmin(): Promise<boolean> {
   const jar = await cookies();
   const session = verifyToken<{ role: string; exp: number }>(jar.get(ADMIN)?.value);
   return Boolean(session && session.role === "admin" && session.exp > Date.now());
+}
+
+export async function setRiderCookie(riderId: string) {
+  const jar = await cookies();
+  jar.set(RIDER, sign({ rid: riderId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 }), baseCookie(60 * 60 * 24 * 30));
+}
+
+export async function clearRiderCookie() {
+  const jar = await cookies();
+  jar.delete(RIDER);
+}
+
+export async function readRiderId(): Promise<string | null> {
+  const jar = await cookies();
+  const session = verifyToken<{ rid: string; exp: number }>(jar.get(RIDER)?.value);
+  if (!session || session.exp < Date.now()) return null;
+  return session.rid;
+}
+
+/** Remembers the Google sign-in attempt so the callback can reject forged responses. */
+export async function setOauthState(state: string, next: string) {
+  const jar = await cookies();
+  jar.set(OAUTH, sign({ state, next, exp: Date.now() + 10 * 60 * 1000 }), baseCookie(10 * 60));
+}
+
+export async function takeOauthState(): Promise<{ state: string; next: string } | null> {
+  const jar = await cookies();
+  const saved = verifyToken<{ state: string; next: string; exp: number }>(jar.get(OAUTH)?.value);
+  jar.delete(OAUTH);
+  if (!saved || saved.exp < Date.now()) return null;
+  return { state: saved.state, next: saved.next };
 }
 
 export async function cartCookie(): Promise<string | null> {

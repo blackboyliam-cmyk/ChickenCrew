@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Bike,
   CalendarClock,
   ClipboardList,
   ExternalLink,
@@ -21,6 +22,7 @@ import { api } from "@/lib/api-client";
 const LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { href: "/admin/riders", label: "Riders", icon: Bike },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: LayoutGrid },
   { href: "/admin/offers", label: "Offers", icon: Tag },

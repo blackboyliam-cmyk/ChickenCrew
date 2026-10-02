@@ -96,15 +96,49 @@ export type Address = {
   city: string;
   state: string;
   pincode: string;
+  /** Pinned on the map at checkout; riders navigate here. */
+  lat?: number;
+  lng?: number;
 };
 
 export type User = {
   id: string;
   name: string;
+  /** Empty for accounts created with Google sign-in. */
   phone: string;
   email: string;
+  googleId?: string;
   savedProductIds: string[];
   createdAt: string;
+};
+
+export type Rider = {
+  id: string;
+  name: string;
+  phone: string;
+  /** scrypt salt and hash, hex, joined with ":". */
+  pinHash: string;
+  active: boolean;
+  createdAt: string;
+};
+
+export type RiderLocation = {
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  heading: number | null;
+  speed: number | null;
+  at: string;
+};
+
+export type Collection = {
+  amount: number;
+  mode: "cash" | "upi";
+  /** Null when the shop collected it directly. */
+  riderId: string | null;
+  at: string;
+  /** Set once the cash reaches the shop. UPI goes straight to the shop, so it is settled immediately. */
+  settledAt: string | null;
 };
 
 export type CartItem = {
@@ -169,6 +203,12 @@ export type Order = {
   couponHeld: boolean;
   idempotencyKey?: string;
   cancelReason?: string;
+  riderId?: string | null;
+  /** The customer reads this to the rider at the door. Older orders have none. */
+  deliveryCode?: string;
+  outForDeliveryAt?: string;
+  deliveredAt?: string;
+  collection?: Collection | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -196,6 +236,9 @@ export type ShopSettings = {
   codEnabled: boolean;
   onlinePaymentEnabled: boolean;
   starterCatalogue: boolean;
+  /** Printed on bills when set. */
+  gstin: string;
+  fssai: string;
   policies: {
     privacy: string;
     terms: string;
@@ -251,6 +294,7 @@ export type DB = {
   analytics: AnalyticsEvent[];
   bookings: Booking[];
   payments: PaymentRecord[];
+  riders: Rider[];
 };
 
 export type ProductCardData = {
@@ -312,6 +356,7 @@ export type CartView = {
 export type PublicSettings = ShopSettings & {
   razorpayKeyId: string | null;
   onlineReady: boolean;
+  googleSignIn: boolean;
 };
 
 export type DeliverySlotOption = {

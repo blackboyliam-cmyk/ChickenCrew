@@ -298,6 +298,8 @@ export function createSeed(): DB {
     codEnabled: true,
     onlinePaymentEnabled: true,
     starterCatalogue: true,
+    gstin: "",
+    fssai: "",
     policies: POLICIES,
     extraFaqs: [],
   };
@@ -319,6 +321,7 @@ export function createSeed(): DB {
     analytics: [],
     bookings: [],
     payments: [],
+    riders: [],
   };
 }
 

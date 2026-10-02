@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { CalendarClock, Check, Clock, CreditCard, MapPin, RotateCcw, XCircle } from "lucide-react";
+import { CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
+import { OrderTracking } from "@/components/site/order-tracking";
 import { ErrorState, ListSkeleton } from "@/components/site/states";
 import { useShop } from "@/components/site/shop-context";
 import { api, ApiClientError } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
+import { payExistingOrder } from "@/lib/razorpay-client";
+import { waLink } from "@/lib/whatsapp";
 import { formatOrderDate } from "@/lib/time";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,11 +28,11 @@ const STEPS = [
 export default function OrderPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
-  const { refresh } = useShop();
+  const { refresh, settings, user } = useShop();
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState<"" | "cancel" | "reorder">("");
+  const [busy, setBusy] = useState<"" | "cancel" | "reorder" | "pay">("");
 
   async function load() {
     try {
@@ -56,6 +59,26 @@ export default function OrderPage() {
       setOrder(data.order);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function pay() {
+    if (!order) return;
+    setBusy("pay");
+    try {
+      const paid = await payExistingOrder({
+        orderId: order.id,
+        number: order.number,
+        shopName: settings.name,
+        name: order.address.name,
+        phone: order.address.phone,
+        email: user?.email || "",
+      });
+      if (paid) await load();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Payment could not be started. Please try again.");
     } finally {
       setBusy("");
     }
@@ -149,10 +172,23 @@ export default function OrderPage() {
           Order status
         </h2>
         {pending && (
-          <p className="mt-3 flex items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm">
-            <Clock className="size-4 text-warning" aria-hidden />
-            Waiting for payment confirmation.
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warning/10 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2">
+              <Clock className="size-4 text-warning" aria-hidden />
+              {order.paymentStatus === "failed" ? "Your payment didn't go through." : "Waiting for payment confirmation."}
+            </span>
+            {order.paymentMethod === "razorpay" && (
+              <button
+                type="button"
+                disabled={busy !== ""}
+                onClick={() => void pay()}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
+              >
+                {busy === "pay" ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+                Pay {formatINR(order.total)}
+              </button>
+            )}
+          </div>
         )}
         {cancelled ? (
           <p className="mt-3 flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -202,6 +238,23 @@ export default function OrderPage() {
         )}
       </section>
 
+      {order.status === "out_for_delivery" ? (
+        <OrderTracking orderId={order.id} code={order.deliveryCode || null} />
+      ) : (
+        !cancelled &&
+        !pending &&
+        order.status !== "delivered" &&
+        order.deliveryCode && (
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-3xl border bg-card px-5 py-4">
+            <div>
+              <p className="text-sm font-bold">Delivery code</p>
+              <p className="text-xs text-muted-foreground">You&apos;ll tell this to the rider at your door.</p>
+            </div>
+            <p className="font-mono text-2xl font-black tracking-[0.25em]">{order.deliveryCode}</p>
+          </div>
+        )
+      )}
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <section className="rounded-3xl border bg-card p-5">
           <h2 className="flex items-center gap-2 text-sm font-bold">
@@ -223,7 +276,11 @@ export default function OrderPage() {
           </h2>
           <p className="mt-2 text-sm font-semibold">
             {order.paymentStatus === "paid"
-              ? "Paid online"
+              ? order.paymentMethod === "cod"
+                ? order.collection?.mode === "upi"
+                  ? "Paid by UPI on delivery"
+                  : "Paid in cash on delivery"
+                : "Paid online"
               : order.paymentMethod === "cod"
                 ? "Cash on delivery"
                 : order.paymentStatus === "failed"
@@ -301,6 +358,27 @@ export default function OrderPage() {
           <RotateCcw className="size-4" aria-hidden />
           Reorder
         </button>
+        {!pending && (
+          <Link
+            href={`/bill/${order.id}`}
+            target="_blank"
+            className="inline-flex h-12 items-center gap-2 rounded-xl border px-5 text-sm font-semibold hover:bg-muted"
+          >
+            <FileText className="size-4" aria-hidden />
+            Bill
+          </Link>
+        )}
+        {settings.whatsapp && (
+          <a
+            href={waLink(settings.whatsapp, `Hi ${settings.name}, I need help with order #${order.number}.`)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-12 items-center gap-2 rounded-xl border px-5 text-sm font-semibold hover:bg-muted"
+          >
+            <MessageCircle className="size-4 text-success" aria-hidden />
+            WhatsApp us
+          </a>
+        )}
         {!showSuccess && (
           <Link href="/shop" className="inline-flex h-12 items-center rounded-xl border px-5 text-sm font-semibold hover:bg-muted">
             Continue shopping

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminSidebar, AdminTopbar } from "@/components/admin/admin-nav";
+import { OrderAlerts } from "@/components/admin/order-alerts";
 import { isAdmin } from "@/lib/auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <AdminTopbar />
         <main className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
+      <OrderAlerts />
     </div>
   );
 }

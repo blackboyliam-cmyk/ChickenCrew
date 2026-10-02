@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MapPicker } from "@/components/maps/map-picker";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/site/states";
 import { useShop } from "@/components/site/shop-context";
 import { api, ApiClientError } from "@/lib/api-client";
@@ -91,7 +92,7 @@ export default function AddressesPage() {
   }
 
   const form = editing?.form;
-  const set = (patch: Partial<Form>) => editing && setEditing({ ...editing, form: { ...editing.form, ...patch } });
+  const set = (patch: Partial<Form>) => setEditing((current) => current && { ...current, form: { ...current.form, ...patch } });
 
   return (
     <div>
@@ -183,6 +184,12 @@ export default function AddressesPage() {
                     );
                   })}
                 </div>
+                <MapPicker
+                  value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+                  onChange={(pin) => set({ lat: pin?.lat, lng: pin?.lng })}
+                  onAddress={(parts) => set(Object.fromEntries(Object.entries(parts).filter(([, value]) => value)))}
+                  hint={form.pincode ? `${form.pincode}, India` : undefined}
+                />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Full name" autoComplete="name" value={form.name} onChange={(name) => set({ name })} />
                   <Field label="Mobile number" autoComplete="tel" inputMode="tel" value={form.phone} onChange={(phone) => set({ phone })} />

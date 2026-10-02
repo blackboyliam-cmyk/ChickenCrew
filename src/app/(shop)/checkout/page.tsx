@@ -7,23 +7,20 @@ import { useRouter } from "next/navigation";
 import { Banknote, Check, ChevronLeft, CreditCard, Loader2, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
 import { openLocation } from "@/components/site/site-shell";
 import { useShop } from "@/components/site/shop-context";
 import { EmptyState } from "@/components/site/states";
+import { MapPicker } from "@/components/maps/map-picker";
 import { api, ApiClientError } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
+import { loadRazorpay } from "@/lib/razorpay-client";
 import type { Address, DeliverySlotOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Quote = { ok?: boolean; message?: string; discount?: number; deliveryFee?: number; total?: number; code?: string };
 type SlotGroup = { date: string; label: string; slots: DeliverySlotOption[] };
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
 
 const STEPS = ["Address", "Slot", "Payment", "Review"];
 const REQUIRED: [keyof AddressForm, string][] = [
@@ -49,6 +46,8 @@ type AddressForm = {
   pincode: string;
   label: string;
   saveAddress: boolean;
+  lat?: number;
+  lng?: number;
 };
 
 export default function CheckoutPage() {
@@ -152,6 +151,8 @@ export default function CheckoutPage() {
       pincode: location.pincode || "",
       label: "home",
       saveAddress: true,
+      lat: undefined,
+      lng: undefined,
     }));
   }
 
@@ -286,6 +287,7 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Sign in to check out</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">We&apos;ll send a one-time code to your mobile number.</p>
         <div className="mt-6 rounded-2xl border bg-card p-5 shadow-card">
+          <GoogleButton next="/checkout" />
           <OtpForm onDone={() => void refreshUser()} submitLabel="Continue to checkout" />
         </div>
       </div>
@@ -422,6 +424,19 @@ export default function CheckoutPage() {
 
               {showForm && (
                 <div className="mt-4 rounded-2xl border bg-card p-4 md:p-5">
+                  <div className="mb-4">
+                    <MapPicker
+                      value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+                      onChange={(pin) => setForm((current) => ({ ...current, lat: pin?.lat, lng: pin?.lng }))}
+                      onAddress={(parts) =>
+                        setForm((current) => ({
+                          ...current,
+                          ...Object.fromEntries(Object.entries(parts).filter(([, value]) => value)),
+                        }))
+                      }
+                      hint={form.pincode ? `${form.pincode}, India` : undefined}
+                    />
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Full name" autoComplete="name" value={form.name} onChange={(name) => setForm({ ...form, name })} />
                     <Field label="Mobile number" autoComplete="tel" inputMode="tel" value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
@@ -790,13 +805,3 @@ function SummaryRow({ label, value, success }: { label: string; value: string; s
   );
 }
 
-function loadRazorpay() {
-  if (window.Razorpay) return Promise.resolve();
-  return new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new ApiClientError("Payment could not be started. Please try again."));
-    document.body.appendChild(script);
-  });
-}

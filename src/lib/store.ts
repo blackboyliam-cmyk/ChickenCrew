@@ -1,10 +1,11 @@
 import "server-only";
 
 import { AsyncLocalStorage } from "async_hooks";
-import { randomUUID } from "crypto";
+import { randomInt, randomUUID } from "crypto";
 import { loadSnapshot, saveEvents, saveSnapshot, usingMongo } from "./db-backend";
 import { ApiError } from "./errors";
 import { optimizeImage } from "./images";
+import { hashPin, verifyPin } from "./pin";
 import { formatINR, rupeesToPaise } from "./money";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
 import { parseGrams } from "./weights";
@@ -36,6 +37,7 @@ import type {
   Product,
   ProductCardData,
   PublicSettings,
+  Rider,
   ShopSettings,
   SlotTemplate,
   User,
@@ -107,6 +109,9 @@ function normalizeDb(db: DB): DB {
   db.bookings ||= [];
   db.payments ||= [];
   db.analytics ||= [];
+  db.riders ||= [];
+  db.settings.gstin ??= "";
+  db.settings.fssai ??= "";
   return db;
 }
 
@@ -190,7 +195,8 @@ function publicSettings(settings: ShopSettings): PublicSettings {
   const key = process.env.RAZORPAY_KEY_ID || null;
   const secret = process.env.RAZORPAY_KEY_SECRET || null;
   const onlineReady = Boolean(settings.onlinePaymentEnabled && key && secret);
-  return { ...settings, razorpayKeyId: onlineReady ? key : null, onlineReady };
+  const googleSignIn = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  return { ...settings, razorpayKeyId: onlineReady ? key : null, onlineReady, googleSignIn };
 }
 
 export function getPublicSettings(): PublicSettings {
@@ -718,7 +724,17 @@ export type AddressInput = {
   city?: string;
   state?: string;
   pincode?: string;
+  lat?: unknown;
+  lng?: unknown;
 };
+
+function parsePin(lat: unknown, lng: unknown) {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (lat == null || lng == null || lat === "" || lng === "") return null;
+  if (!Number.isFinite(la) || !Number.isFinite(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) return null;
+  return { lat: Math.round(la * 1e6) / 1e6, lng: Math.round(ln * 1e6) / 1e6 };
+}
 
 export function parseAddress(input: AddressInput, fallbackPhone = ""): Omit<Address, "id" | "userId"> {
   const phone = normalizeMobile(String(input.phone || fallbackPhone || ""));
@@ -736,6 +752,7 @@ export function parseAddress(input: AddressInput, fallbackPhone = ""): Omit<Addr
   if (!house || !area || !city) {
     throw new ApiError(400, "House, area, and city are required.");
   }
+  const pin = parsePin(input.lat, input.lng);
   return {
     label,
     name,
@@ -748,6 +765,8 @@ export function parseAddress(input: AddressInput, fallbackPhone = ""): Omit<Addr
     city,
     state,
     pincode,
+    lat: pin?.lat,
+    lng: pin?.lng,
   };
 }
 
@@ -798,6 +817,32 @@ export function upsertUser(phone: string): User {
       name: "",
       phone,
       email: "",
+      savedProductIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    db.users.push(user);
+    return user;
+  });
+}
+
+/**
+ * Accounts are matched on the Google account id only. Emails typed into a profile are not
+ * verified, so matching on email would let someone claim another person's Google sign-in.
+ */
+export function upsertGoogleUser(profile: { sub: string; email: string; name: string }): User {
+  return update((db) => {
+    const existing = db.users.find((user) => user.googleId === profile.sub);
+    if (existing) {
+      if (!existing.name) existing.name = cleanText(profile.name, 80);
+      if (!existing.email) existing.email = profile.email;
+      return existing;
+    }
+    const user: User = {
+      id: randomUUID(),
+      name: cleanText(profile.name, 80),
+      phone: "",
+      email: profile.email,
+      googleId: profile.sub,
       savedProductIds: [],
       createdAt: new Date().toISOString(),
     };
@@ -905,6 +950,7 @@ export function createOrder(input: CheckoutInput): Order {
 
     const settings = db.settings;
     const address = parseAddress({ ...input.address, name, phone: input.address.phone || user.phone }, user.phone);
+    const buyerPhone = user.phone || address.phone;
     const area = checkAgainst(settings, address.pincode);
     if (!area.ok) throw new ApiError(400, area.message);
 
@@ -953,12 +999,12 @@ export function createOrder(input: CheckoutInput): Order {
     if (code) {
       const coupon = db.coupons.find((item) => item.code === code);
       if (!coupon) throw new ApiError(400, "Invalid coupon.");
-      const result = evaluateCoupon(coupon, subtotal, user.phone);
+      const result = evaluateCoupon(coupon, subtotal, buyerPhone);
       if (!result.ok) throw new ApiError(400, result.message);
       discount = result.discount;
       couponCode = coupon.code;
       coupon.usedCount += 1;
-      coupon.usedBy.push(user.phone);
+      coupon.usedBy.push(buyerPhone);
     }
 
     const payable = subtotal - discount;
@@ -981,7 +1027,7 @@ export function createOrder(input: CheckoutInput): Order {
       id: randomUUID(),
       number: `KCC${db.orderSeq}`,
       userId: user.id,
-      phone: user.phone,
+      phone: buyerPhone,
       email: user.email,
       items,
       address,
@@ -997,6 +1043,9 @@ export function createOrder(input: CheckoutInput): Order {
       inventoryHeld: false,
       couponHeld: Boolean(couponCode),
       idempotencyKey: input.idempotencyKey,
+      riderId: null,
+      deliveryCode: String(randomInt(1000, 10000)),
+      collection: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -1109,6 +1158,11 @@ export function publicOrder(order: Order) {
     cancelReason: order.cancelReason || "",
     createdAt: order.createdAt,
     razorpayOrderId: order.razorpayOrderId || null,
+    riderId: order.riderId || null,
+    deliveryCode: order.deliveryCode || null,
+    outForDeliveryAt: order.outForDeliveryAt || null,
+    deliveredAt: order.deliveredAt || null,
+    collection: order.collection || null,
   };
 }
 
@@ -1507,22 +1561,249 @@ const STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
-export function adminUpdateOrder(id: string, status: string) {
-  if (!STATUSES.includes(status as OrderStatus)) throw new ApiError(400, "Unknown status.");
+export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?: unknown }) {
+  const status = input.status == null || input.status === "" ? null : String(input.status);
+  if (status && !STATUSES.includes(status as OrderStatus)) throw new ApiError(400, "Unknown status.");
   return update((db) => {
     const order = db.orders.find((item) => item.id === id);
     if (!order) throw new ApiError(404, "Order not found.");
-    const next = status as OrderStatus;
-    if (next === "cancelled" && order.status !== "cancelled") {
-      restoreInventory(db, order);
-      restoreCoupon(db, order);
-      if (order.paymentStatus === "paid") order.paymentStatus = "refund_pending";
-      order.cancelReason = "Cancelled by the shop.";
+    const now = new Date().toISOString();
+    if (input.riderId !== undefined) {
+      const riderId = input.riderId ? String(input.riderId) : null;
+      if (riderId && !db.riders.some((rider) => rider.id === riderId && rider.active)) {
+        throw new ApiError(400, "Choose an active rider.");
+      }
+      if (order.status === "delivered" || order.status === "cancelled") {
+        throw new ApiError(400, "This order is already closed.");
+      }
+      order.riderId = riderId;
     }
-    order.status = next;
-    order.updatedAt = new Date().toISOString();
+    if (status && status !== order.status) {
+      const next = status as OrderStatus;
+      if (next === "cancelled") {
+        restoreInventory(db, order);
+        restoreCoupon(db, order);
+        if (order.paymentStatus === "paid") order.paymentStatus = "refund_pending";
+        order.cancelReason = "Cancelled by the shop.";
+      }
+      if (next === "out_for_delivery") order.outForDeliveryAt ||= now;
+      if (next === "delivered") {
+        order.deliveredAt = now;
+        if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+          order.paymentStatus = "paid";
+          order.collection = {
+            amount: order.total,
+            mode: "cash",
+            riderId: order.riderId || null,
+            at: now,
+            settledAt: order.riderId ? null : now,
+          };
+        }
+      }
+      order.status = next;
+    }
+    order.updatedAt = now;
     return publicOrder(order);
   });
+}
+
+/** Newly placed orders, for the admin's new-order alert. */
+export function adminOrderFeed() {
+  return readDb()
+    .orders.filter((order) => order.status === "placed")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 20)
+    .map((order) => ({ id: order.id, number: order.number, total: order.total, name: order.address.name, createdAt: order.createdAt }));
+}
+
+/* ------------------------------------------------------------------ Riders */
+
+const RIDER_OPEN: OrderStatus[] = ["placed", "confirmed", "preparing", "ready", "out_for_delivery"];
+
+function cashInHand(db: DB, riderId: string) {
+  return db.orders.reduce(
+    (sum, order) =>
+      order.collection && order.collection.riderId === riderId && order.collection.mode === "cash" && !order.collection.settledAt
+        ? sum + order.collection.amount
+        : sum,
+    0,
+  );
+}
+
+function deliveredToday(db: DB, riderId: string) {
+  const today = todayKey();
+  return db.orders.filter(
+    (order) => order.riderId === riderId && order.status === "delivered" && order.deliveredAt && todayKey(new Date(order.deliveredAt)) === today,
+  );
+}
+
+export function adminListRiders() {
+  const db = readDb();
+  return db.riders.map((rider) => ({
+    id: rider.id,
+    name: rider.name,
+    phone: rider.phone,
+    active: rider.active,
+    createdAt: rider.createdAt,
+    openOrders: db.orders.filter((order) => order.riderId === rider.id && RIDER_OPEN.includes(order.status)).length,
+    deliveredToday: deliveredToday(db, rider.id).length,
+    cashInHand: cashInHand(db, rider.id),
+  }));
+}
+
+export function adminSaveRider(input: Record<string, unknown>, id?: string) {
+  return update((db) => {
+    const name = cleanText(input.name, 60);
+    if (name.length < 2) throw new ApiError(400, "Enter the rider's name.");
+    const phone = normalizeMobile(String(input.phone || ""));
+    if (!isIndianMobile(phone)) throw new ApiError(400, "Enter a valid 10-digit mobile number.");
+    if (db.riders.some((rider) => rider.phone === phone && rider.id !== id)) {
+      throw new ApiError(400, "Another rider already uses this number.");
+    }
+    const pin = String(input.pin || "").trim();
+    if (pin && !/^\d{4,6}$/.test(pin)) throw new ApiError(400, "The PIN must be 4 to 6 digits.");
+    const existing = id ? db.riders.find((rider) => rider.id === id) : null;
+    if (id && !existing) throw new ApiError(404, "Rider not found.");
+    if (!existing && !pin) throw new ApiError(400, "Set a PIN for the rider.");
+    const rider: Rider = {
+      id: existing?.id || randomUUID(),
+      name,
+      phone,
+      pinHash: pin ? hashPin(pin) : existing!.pinHash,
+      active: input.active !== false,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+    };
+    if (existing) Object.assign(existing, rider);
+    else db.riders.push(rider);
+    if (!rider.active) {
+      for (const order of db.orders) {
+        if (order.riderId === rider.id && RIDER_OPEN.includes(order.status) && order.status !== "out_for_delivery") order.riderId = null;
+      }
+    }
+    return { id: rider.id };
+  });
+}
+
+/** Marks all cash the rider is holding as handed over to the shop. */
+export function adminSettleRider(id: string) {
+  return update((db) => {
+    if (!db.riders.some((rider) => rider.id === id)) throw new ApiError(404, "Rider not found.");
+    const now = new Date().toISOString();
+    let amount = 0;
+    for (const order of db.orders) {
+      const c = order.collection;
+      if (c && c.riderId === id && c.mode === "cash" && !c.settledAt) {
+        c.settledAt = now;
+        amount += c.amount;
+      }
+    }
+    return { settled: amount };
+  });
+}
+
+export function riderLogin(phone: string, pin: string) {
+  const rider = readDb().riders.find((item) => item.phone === normalizeMobile(phone));
+  if (!rider || !rider.active || !verifyPin(pin, rider.pinHash)) {
+    throw new ApiError(401, "Wrong number or PIN.");
+  }
+  return { id: rider.id, name: rider.name };
+}
+
+export function getActiveRider(id: string | null) {
+  if (!id) return null;
+  return readDb().riders.find((rider) => rider.id === id && rider.active) || null;
+}
+
+function riderOrder(order: Order) {
+  const due = order.paymentMethod === "cod" && order.paymentStatus !== "paid" ? order.total : 0;
+  return {
+    id: order.id,
+    number: order.number,
+    status: order.status,
+    slot: order.slot,
+    address: order.address,
+    items: order.items.map((item) => ({ name: item.name, weight: item.weight, qty: item.qty })),
+    total: order.total,
+    paymentMethod: order.paymentMethod,
+    due,
+    needsCode: Boolean(order.deliveryCode),
+    deliveredAt: order.deliveredAt || null,
+    collection: order.collection || null,
+  };
+}
+
+export function riderDashboard(riderId: string) {
+  const db = readDb();
+  const rider = db.riders.find((item) => item.id === riderId);
+  if (!rider) throw new ApiError(401, "Please sign in again.");
+  const open = db.orders
+    .filter((order) => order.riderId === riderId && RIDER_OPEN.includes(order.status))
+    .sort((a, b) => (a.slot.date + a.slot.label).localeCompare(b.slot.date + b.slot.label));
+  const done = deliveredToday(db, riderId).sort((a, b) => (b.deliveredAt || "").localeCompare(a.deliveredAt || ""));
+  return {
+    rider: { id: rider.id, name: rider.name, phone: rider.phone },
+    orders: open.map(riderOrder),
+    delivered: done.map(riderOrder),
+    cashInHand: cashInHand(db, riderId),
+    shopPhone: db.settings.phone,
+  };
+}
+
+export function riderUpdateOrder(riderId: string, orderId: string, input: Record<string, unknown>) {
+  return update((db) => {
+    const order = db.orders.find((item) => item.id === orderId && item.riderId === riderId);
+    if (!order) throw new ApiError(404, "This order is not assigned to you.");
+    const now = new Date().toISOString();
+    if (input.action === "start") {
+      if (!["confirmed", "preparing", "ready", "placed"].includes(order.status)) {
+        throw new ApiError(400, "This order can't be started now.");
+      }
+      order.status = "out_for_delivery";
+      order.outForDeliveryAt = now;
+    } else if (input.action === "deliver") {
+      if (order.status !== "out_for_delivery") throw new ApiError(400, "Start the delivery first.");
+      if (order.deliveryCode && String(input.code || "").trim() !== order.deliveryCode) {
+        throw new ApiError(400, "That delivery code is wrong. Ask the customer to check their order page.");
+      }
+      if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+        const mode = input.mode === "upi" ? "upi" : input.mode === "cash" ? "cash" : null;
+        if (!mode) throw new ApiError(400, "Choose how the customer paid.");
+        order.paymentStatus = "paid";
+        order.collection = { amount: order.total, mode, riderId, at: now, settledAt: mode === "upi" ? now : null };
+      }
+      order.status = "delivered";
+      order.deliveredAt = now;
+    } else {
+      throw new ApiError(400, "Unknown action.");
+    }
+    order.updatedAt = now;
+    return riderOrder(order);
+  });
+}
+
+/** What the customer's order page needs to show the rider on a map. */
+export function getTracking(userId: string, id: string) {
+  const db = readDb();
+  const order = db.orders.find((item) => item.userId === userId && (item.id === id || item.number === id));
+  if (!order) throw new ApiError(404, "We could not find that order.");
+  const rider = order.riderId ? db.riders.find((item) => item.id === order.riderId) : null;
+  const pin = order.address.lat != null && order.address.lng != null ? { lat: order.address.lat, lng: order.address.lng } : null;
+  return {
+    status: order.status,
+    riderId: rider?.id || null,
+    rider: rider ? { name: rider.name, phone: rider.phone } : null,
+    destination: pin,
+  };
+}
+
+/** The bill is visible to the shop admin and to the customer who placed the order. */
+export function getBill(id: string, access: { userId: string | null; admin: boolean }) {
+  const db = readDb();
+  const order = db.orders.find((item) => item.id === id || item.number === id);
+  if (!order) return null;
+  if (!access.admin && order.userId !== access.userId) return null;
+  if (order.status === "pending_payment") return null;
+  return { order, settings: db.settings };
 }
 
 export function adminCustomers() {
@@ -1555,10 +1836,18 @@ export function adminUpdateSettings(input: Record<string, unknown>) {
       "hours",
       "mapUrl",
       "about",
+      "gstin",
+      "fssai",
     ] as const;
     for (const key of textKeys) {
       if (key in input) settings[key] = cleanText(input[key], key === "about" ? 1200 : 200);
     }
+    settings.gstin = settings.gstin.toUpperCase().replace(/\s/g, "");
+    if (settings.gstin && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(settings.gstin)) {
+      throw new ApiError(400, "GSTIN should be 15 characters, like 32ABCDE1234F1Z5.");
+    }
+    settings.fssai = settings.fssai.replace(/\s/g, "");
+    if (settings.fssai && !/^\d{14}$/.test(settings.fssai)) throw new ApiError(400, "The FSSAI licence number has 14 digits.");
     if (typeof input.servicePincodes === "string") {
       settings.servicePincodes = input.servicePincodes
         .split(/[\s,]+/)

@@ -29,7 +29,7 @@ export default function CustomersAdmin() {
 
   return (
     <div>
-      <AdminHeader title="Customers" description="Everyone who has signed in with their phone number." />
+      <AdminHeader title="Customers" description="Everyone who has signed in with their phone number or Google." />
       {error && <ErrorBanner message={error} onRetry={() => void reload()} />}
 
       <div className="mb-5 grid grid-cols-3 gap-3">
@@ -84,10 +84,14 @@ export default function CustomersAdmin() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <a href={`tel:+91${c.phone}`} className="inline-flex items-center gap-1.5 font-medium hover:text-primary">
-                        <Phone className="size-3.5 text-muted-foreground" />
-                        {c.phone}
-                      </a>
+                      {c.phone ? (
+                        <a href={`tel:+91${c.phone}`} className="inline-flex items-center gap-1.5 font-medium hover:text-primary">
+                          <Phone className="size-3.5 text-muted-foreground" />
+                          {c.phone}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Google sign-in</span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       {c.orders === 0 ? <Badge>None</Badge> : <Badge tone={c.orders > 1 ? "green" : "blue"}>{c.orders}</Badge>}

@@ -36,7 +36,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
           <h1 className="truncate text-xl font-extrabold tracking-tight md:text-2xl">
             {user ? user.name || "Your account" : "Account"}
           </h1>
-          {user && <p className="text-sm text-muted-foreground">{user.phone}</p>}
+          {user && <p className="text-sm text-muted-foreground">{user.phone || user.email}</p>}
         </div>
       </div>
 

@@ -19,6 +19,8 @@ type Form = {
   pincode: string;
   mapUrl: string;
   about: string;
+  gstin: string;
+  fssai: string;
   servicePincodes: string;
   deliveryFee: string;
   freeDeliveryAbove: string;
@@ -45,6 +47,8 @@ const fromSettings = (s: ShopSettings): Form => ({
   pincode: s.pincode,
   mapUrl: s.mapUrl,
   about: s.about,
+  gstin: s.gstin ?? "",
+  fssai: s.fssai ?? "",
   servicePincodes: s.servicePincodes.join(", "),
   deliveryFee: toRupees(s.deliveryFee),
   freeDeliveryAbove: toRupees(s.freeDeliveryAbove),
@@ -128,6 +132,8 @@ export default function SettingsAdmin() {
           <Field label="Shop name" value={form.name} onChange={set("name")} />
           <Field label="Tagline" value={form.tagline} onChange={set("tagline")} />
           <Field label="About the shop" area className="sm:col-span-2" value={form.about} onChange={set("about")} hint="Shown on the About page and in the footer." />
+          <Field label="GSTIN" value={form.gstin} onChange={(value) => set("gstin")(value.toUpperCase())} placeholder="32ABCDE1234F1Z5" hint="Optional. Printed on bills." />
+          <Field label="FSSAI licence number" inputMode="numeric" value={form.fssai} onChange={set("fssai")} placeholder="14 digits" hint="Printed on bills. Food businesses must show it." />
           <div className="sm:col-span-2">
             <Toggle
               checked={form.starterCatalogue}

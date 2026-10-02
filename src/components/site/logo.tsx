@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-function Mark() {
+export function Mark({ className = "size-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className="size-5" aria-hidden>
+    <svg viewBox="0 0 32 32" className={className} aria-hidden>
       <path
         d="M19.5 4.5c4.4 0 8 3.6 8 8 0 4.6-3.8 8.3-8.4 8l-3.3 3.3a3 3 0 1 1-3.4 3.4 3 3 0 1 1 .1-5.9L15.8 18c-.3-4.6 3.3-8.5 3.7-13.5Z"
         fill="currentColor"

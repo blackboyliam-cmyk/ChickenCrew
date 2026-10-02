@@ -6,7 +6,7 @@ import path from "path";
 import { MongoClient, type Collection } from "mongodb";
 import { ApiError } from "./errors";
 import { createSeed } from "./seed";
-import type { AnalyticsEvent, DB } from "./types";
+import type { AnalyticsEvent, DB, RiderLocation } from "./types";
 
 /**
  * Persistence for the shop document. With MONGODB_URI set, the whole shop lives in one MongoDB
@@ -54,10 +54,48 @@ export async function saveEvents(events: AnalyticsEvent[]) {
   }
 }
 
+/* ---------------------------------------------------------- Rider locations */
+
+// Location pings arrive every few seconds, so they live outside the shop document.
+type LocationDoc = RiderLocation & { _id: string };
+
+export async function saveRiderLocation(riderId: string, location: RiderLocation) {
+  if (!usingMongo()) {
+    (globalThis.__ccLocations ||= new Map()).set(riderId, location);
+    return;
+  }
+  const client = await mongo();
+  await client
+    .db(dbName())
+    .collection<LocationDoc>("rider_locations")
+    .updateOne({ _id: riderId }, { $set: location }, { upsert: true });
+}
+
+export async function loadRiderLocations(riderIds: string[]): Promise<Record<string, RiderLocation>> {
+  if (!riderIds.length) return {};
+  if (!usingMongo()) {
+    const all = globalThis.__ccLocations || new Map<string, RiderLocation>();
+    return Object.fromEntries(riderIds.flatMap((id) => (all.has(id) ? [[id, all.get(id)!]] : [])));
+  }
+  try {
+    const client = await mongo();
+    const docs = await client
+      .db(dbName())
+      .collection<LocationDoc>("rider_locations")
+      .find({ _id: { $in: riderIds } })
+      .toArray();
+    return Object.fromEntries(docs.map(({ _id, ...location }) => [_id, location]));
+  } catch (error) {
+    console.error("rider location read failed", error);
+    return {};
+  }
+}
+
 /* ------------------------------------------------------------------ Mongo */
 
 declare global {
   var __ccMongo: Promise<MongoClient> | undefined;
+  var __ccLocations: Map<string, RiderLocation> | undefined;
 }
 
 function dbName() {
