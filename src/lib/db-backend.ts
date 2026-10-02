@@ -73,10 +73,13 @@ function mongo(): Promise<MongoClient> {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 8000,
     });
-    globalThis.__ccMongo = client.connect().catch((error) => {
-      globalThis.__ccMongo = undefined;
-      throw error;
-    });
+    globalThis.__ccMongo = client
+      .connect()
+      .catch(() => client.connect())
+      .catch((error) => {
+        globalThis.__ccMongo = undefined;
+        throw error;
+      });
   }
   return globalThis.__ccMongo;
 }

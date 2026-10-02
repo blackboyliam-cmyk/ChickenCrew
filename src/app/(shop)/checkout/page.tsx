@@ -283,10 +283,10 @@ export default function CheckoutPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-md py-8">
-        <h1 className="text-2xl font-extrabold tracking-tight">Log in to check out</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Sign in to check out</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">We&apos;ll send a one-time code to your mobile number.</p>
-        <div className="mt-6 rounded-2xl border bg-card p-5">
-          <OtpForm onDone={() => void refreshUser()} />
+        <div className="mt-6 rounded-2xl border bg-card p-5 shadow-card">
+          <OtpForm onDone={() => void refreshUser()} submitLabel="Continue to checkout" />
         </div>
       </div>
     );

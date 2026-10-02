@@ -27,9 +27,9 @@ export default function ProfilePage() {
     return (
       <EmptyState
         icon={UserRound}
-        title="Log in to your account"
+        title="Sign in to your account"
         body="See your orders, saved addresses and coupons."
-        actionLabel="Log in"
+        actionLabel="Sign in"
         href="/login?next=/account"
       />
     );

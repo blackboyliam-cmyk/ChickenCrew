@@ -19,7 +19,7 @@ export default function SavedPage() {
   }, [user]);
 
   if (!ready) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (!user) return <Button asChild><Link href="/login?next=/account/saved">Log in</Link></Button>;
+  if (!user) return <Button asChild><Link href="/login?next=/account/saved">Sign in</Link></Button>;
   if (!products) return <p className="text-sm text-muted-foreground">Loading saved items…</p>;
   if (products.length === 0) {
     return <EmptyState title="No saved items" body="Save a cut from the shop and it will stay here." actionLabel="Browse products" href="/shop" />;

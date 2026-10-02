@@ -65,9 +65,9 @@ export default function OrdersPage() {
     return (
       <EmptyState
         icon={ClipboardList}
-        title="Log in to see your orders"
+        title="Sign in to see your orders"
         body="Your past and current orders appear here."
-        actionLabel="Log in"
+        actionLabel="Sign in"
         href="/login?next=/account/orders"
       />
     );

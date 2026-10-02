@@ -101,7 +101,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ Header */
 
 function Header() {
-  const { cart } = useShop();
+  const { cart, user } = useShop();
   const pathname = usePathname();
   const next = useNextSlot();
   const [scrolled, setScrolled] = useState(false);
@@ -166,13 +166,23 @@ function Header() {
           >
             <Search className="size-5" />
           </button>
-          <Link
-            href="/account"
-            className="hidden size-11 place-items-center rounded-xl text-foreground hover:bg-muted md:grid"
-            aria-label="Account"
-          >
-            <UserRound className="size-5" />
-          </Link>
+          {user ? (
+            <Link
+              href="/account"
+              className="hidden size-11 place-items-center rounded-xl text-foreground hover:bg-muted md:grid"
+              aria-label="Account"
+            >
+              <UserRound className="size-5" />
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold text-foreground hover:bg-muted md:flex"
+            >
+              <UserRound className="size-5" />
+              Sign in
+            </Link>
+          )}
           <CartButton count={cart?.count || 0} subtotal={cart?.subtotal || 0} />
         </div>
       </div>

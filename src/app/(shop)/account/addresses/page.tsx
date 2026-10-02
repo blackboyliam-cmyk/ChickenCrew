@@ -26,7 +26,7 @@ export default function AddressesPage() {
   }, [user]);
 
   if (!ready) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (!user) return <Button asChild><Link href="/login?next=/account/addresses">Log in</Link></Button>;
+  if (!user) return <Button asChild><Link href="/login?next=/account/addresses">Sign in</Link></Button>;
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
