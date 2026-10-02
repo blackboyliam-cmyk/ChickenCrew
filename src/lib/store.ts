@@ -57,7 +57,13 @@ const PAGE_SIZE_MAX = 48;
 
 const SAVE_ATTEMPTS = 5;
 
-type RequestDb = { db: DB; dirty: boolean; checked: boolean; events: AnalyticsEvent[] };
+type RequestDb = {
+  db: DB;
+  dirty: boolean;
+  checked: boolean;
+  events: AnalyticsEvent[];
+  afterSave: (() => Promise<void>)[];
+};
 
 const requestDb = new AsyncLocalStorage<RequestDb>();
 
@@ -69,13 +75,25 @@ export async function withDb<T>(fn: () => T | Promise<T>): Promise<T> {
   if (requestDb.getStore()) return fn();
   for (let attempt = 0; attempt < SAVE_ATTEMPTS; attempt += 1) {
     const snapshot = await loadSnapshot();
-    const scope: RequestDb = { db: normalizeDb(snapshot.db), dirty: false, checked: false, events: [] };
+    const scope: RequestDb = {
+      db: normalizeDb(snapshot.db),
+      dirty: false,
+      checked: false,
+      events: [],
+      afterSave: [],
+    };
     const result = await requestDb.run(scope, fn);
     if (scope.dirty && !(await saveSnapshot(scope.db, snapshot.version))) continue;
     await saveEvents(scope.events);
+    for (const task of scope.afterSave) await task();
     return result;
   }
   throw new ApiError(503, "The shop is busy right now. Please try again.");
+}
+
+/** Side effects that must not repeat when withDb retries, e.g. sending an SMS. */
+export function afterSave(task: () => Promise<void>) {
+  currentScope().afterSave.push(task);
 }
 
 function currentScope(): RequestDb {
