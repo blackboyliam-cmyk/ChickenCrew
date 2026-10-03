@@ -104,10 +104,12 @@ export type Address = {
 export type User = {
   id: string;
   name: string;
-  /** Empty for accounts created with Google sign-in. */
+  /** Empty for accounts created with Google or email sign-in. */
   phone: string;
   email: string;
   googleId?: string;
+  /** True once the inbox was proven with a Google sign-in or an email OTP. */
+  emailVerified?: boolean;
   savedProductIds: string[];
   createdAt: string;
 };
@@ -249,7 +251,8 @@ export type ShopSettings = {
 };
 
 export type OtpRecord = {
-  phone: string;
+  /** Indian mobile or lowercased email. */
+  target: string;
   codeHash: string;
   expiresAt: number;
   attempts: number;

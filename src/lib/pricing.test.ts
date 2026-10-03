@@ -3,7 +3,7 @@ import test from "node:test";
 import { amountInWords } from "./bill";
 import { distanceMeters, etaMinutes, formatDistance } from "./maps";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
-import { isIndianMobile, isPincode, normalizeMobile } from "./validators";
+import { isEmail, isIndianMobile, isPincode, normalizeMobile } from "./validators";
 import type { Coupon } from "./types";
 
 const coupon: Coupon = {
@@ -81,6 +81,8 @@ test("indian mobile and pincode", () => {
   assert.equal(isIndianMobile("1234567890"), false);
   assert.equal(isPincode("682001"), true);
   assert.equal(isPincode("012345"), false);
+  assert.equal(isEmail("asha@example.com"), true);
+  assert.equal(isEmail("not-an-email"), false);
 });
 
 test("bill amount in words", () => {

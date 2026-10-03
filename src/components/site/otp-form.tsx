@@ -11,13 +11,26 @@ import { useShop } from "@/components/site/shop-context";
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
+type Mode = "phone" | "email";
+
 function message(err: unknown) {
   return err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.";
 }
 
-export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => void; submitLabel?: string }) {
+export function OtpForm({
+  onDone,
+  submitLabel = "Sign in",
+  signup = false,
+}: {
+  onDone?: () => void;
+  submitLabel?: string;
+  signup?: boolean;
+}) {
   const { refreshUser } = useShop();
+  const [mode, setMode] = useState<Mode>("phone");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [digits, setDigits] = useState<string[]>(() => Array(CODE_LENGTH).fill(""));
   const [sent, setSent] = useState(false);
   const [devCode, setDevCode] = useState("");
@@ -27,7 +40,11 @@ export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => vo
   const boxes = useRef<(HTMLInputElement | null)[]>([]);
 
   const validPhone = /^[6-9]\d{9}$/.test(phone);
+  const validEmail = email.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validName = !signup || name.trim().length >= 2;
+  const ready = validName && (mode === "phone" ? validPhone : validEmail);
   const code = digits.join("");
+  const destination = mode === "phone" ? `+91 ${phone.slice(0, 5)} ${phone.slice(5)}` : email;
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -39,13 +56,26 @@ export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => vo
     if (sent) boxes.current[0]?.focus();
   }, [sent]);
 
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setSent(false);
+    setError("");
+    setDevCode("");
+    setDigits(Array(CODE_LENGTH).fill(""));
+    setWait(0);
+  }
+
   async function send(event?: React.FormEvent) {
     event?.preventDefault();
-    if (!validPhone || busy) return;
+    if (!ready || busy) return;
     setBusy(true);
     setError("");
     try {
-      const data = await api<{ devCode?: string }>("/api/auth/otp/send", { method: "POST", body: { phone } });
+      const data = await api<{ devCode?: string }>("/api/auth/otp/send", {
+        method: "POST",
+        body: mode === "phone" ? { phone } : { email },
+      });
       setDigits(Array(CODE_LENGTH).fill(""));
       setDevCode(data.devCode || "");
       setSent(true);
@@ -62,7 +92,14 @@ export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => vo
     setBusy(true);
     setError("");
     try {
-      await api("/api/auth/otp/verify", { method: "POST", body: { phone, code: value } });
+      await api("/api/auth/otp/verify", {
+        method: "POST",
+        body: {
+          ...(mode === "phone" ? { phone } : { email }),
+          code: value,
+          ...(signup ? { name: name.trim() } : {}),
+        },
+      });
       await refreshUser();
       onDone?.();
     } catch (err) {
@@ -107,43 +144,111 @@ export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => vo
   if (!sent) {
     return (
       <form onSubmit={send} className="space-y-4" noValidate>
-        <div>
-          <label htmlFor="mobile" className="text-sm font-semibold">
-            Mobile number
-          </label>
-          <div
-            className={cn(
-              "mt-1.5 flex h-12 items-center overflow-hidden rounded-xl border bg-white transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15",
-              error && "border-destructive",
-            )}
-          >
-            <span className="flex h-full items-center border-r bg-muted/60 px-3.5 text-[15px] font-semibold text-muted-foreground">
-              +91
-            </span>
+        {signup && (
+          <div>
+            <label htmlFor="signup-name" className="text-sm font-semibold">
+              Your name
+            </label>
             <input
-              id="mobile"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              maxLength={10}
-              value={phone}
+              id="signup-name"
+              autoComplete="name"
+              value={name}
               onChange={(event) => {
-                setPhone(event.target.value.replace(/\D/g, "").slice(-10));
+                setName(event.target.value);
                 setError("");
               }}
-              placeholder="98765 43210"
-              className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] font-medium tracking-wide outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60"
-              aria-invalid={Boolean(error)}
-              aria-describedby={error ? "mobile-error" : undefined}
+              placeholder="Asha Nair"
+              className="mt-1.5 h-12 w-full rounded-xl border bg-white px-3.5 text-[16px] outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-3 focus:ring-primary/15"
             />
           </div>
-          {error && (
-            <p id="mobile-error" className="mt-2 text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          )}
+        )}
+        <div className="grid grid-cols-2 rounded-xl bg-muted p-1">
+          {(
+            [
+              ["phone", "Mobile"],
+              ["email", "Email"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => switchMode(value)}
+              aria-pressed={mode === value}
+              className={cn(
+                "h-10 rounded-lg text-sm font-semibold transition-colors",
+                mode === value ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px] font-bold" disabled={!validPhone || busy}>
-          {busy ? <Loader2 className="size-4 animate-spin" /> : "Get OTP"}
+
+        {mode === "phone" ? (
+          <div>
+            <label htmlFor="mobile" className="text-sm font-semibold">
+              Mobile number
+            </label>
+            <div
+              className={cn(
+                "mt-1.5 flex h-12 items-center overflow-hidden rounded-xl border bg-white transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15",
+                error && "border-destructive",
+              )}
+            >
+              <span className="flex h-full items-center border-r bg-muted/60 px-3.5 text-[15px] font-semibold text-muted-foreground">
+                +91
+              </span>
+              <input
+                id="mobile"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={10}
+                value={phone}
+                onChange={(event) => {
+                  setPhone(event.target.value.replace(/\D/g, "").slice(-10));
+                  setError("");
+                }}
+                placeholder="98765 43210"
+                className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] font-medium tracking-wide outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60"
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "signin-error" : undefined}
+              />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="email" className="text-sm font-semibold">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value.trim());
+                setError("");
+              }}
+              placeholder="you@email.com"
+              className={cn(
+                "mt-1.5 h-12 w-full rounded-xl border bg-white px-3.5 text-[16px] outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-3 focus:ring-primary/15",
+                error && "border-destructive",
+              )}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "signin-error" : undefined}
+            />
+          </div>
+        )}
+
+        {error && (
+          <p id="signin-error" className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px] font-bold" disabled={!ready || busy}>
+          {busy ? <Loader2 className="size-4 animate-spin" /> : signup ? "Send code" : "Get OTP"}
         </Button>
         <p className="text-center text-xs leading-5 text-muted-foreground">
           By continuing you agree to our{" "}
@@ -178,10 +283,10 @@ export function OtpForm({ onDone, submitLabel = "Sign in" }: { onDone?: () => vo
           }}
           className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Change number
+          <ArrowLeft className="size-4" /> Change {mode === "phone" ? "number" : "email"}
         </button>
         <p className="mt-3 text-sm text-muted-foreground">
-          Enter the 6-digit code sent to <span className="font-semibold text-foreground">+91 {phone.slice(0, 5)} {phone.slice(5)}</span>
+          Enter the 6-digit code sent to <span className="font-semibold text-foreground">{destination}</span>
         </p>
       </div>
 

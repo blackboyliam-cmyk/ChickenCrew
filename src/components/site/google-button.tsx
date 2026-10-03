@@ -22,7 +22,7 @@ export function GoogleButton({ next }: { next: string }) {
       </a>
       <div className="my-5 flex items-center gap-3 text-xs font-medium text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        or use your mobile number
+        or continue with
         <span className="h-px flex-1 bg-border" />
       </div>
     </>

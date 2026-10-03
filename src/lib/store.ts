@@ -33,6 +33,7 @@ import type {
   Order,
   OrderItem,
   OrderStatus,
+  OtpRecord,
   PaymentMethod,
   Product,
   ProductCardData,
@@ -112,6 +113,16 @@ function normalizeDb(db: DB): DB {
   db.riders ||= [];
   db.settings.gstin ??= "";
   db.settings.fssai ??= "";
+  db.otps = (db.otps || [])
+    .map((otp) => {
+      const legacy = otp as OtpRecord & { phone?: string };
+      const target = legacy.target || legacy.phone || "";
+      return target ? { target, codeHash: otp.codeHash, expiresAt: otp.expiresAt, attempts: otp.attempts || 0 } : null;
+    })
+    .filter((otp): otp is OtpRecord => Boolean(otp));
+  for (const user of db.users) {
+    user.emailVerified ??= Boolean(user.googleId && user.email);
+  }
   return db;
 }
 
@@ -808,13 +819,16 @@ export function getUserByPhone(phone: string): User | null {
   return readDb().users.find((user) => user.phone === phone) || null;
 }
 
-export function upsertUser(phone: string): User {
+export function upsertUser(phone: string, name = ""): User {
   return update((db) => {
     const existing = db.users.find((user) => user.phone === phone);
-    if (existing) return existing;
+    if (existing) {
+      if (!existing.name && name) existing.name = name;
+      return existing;
+    }
     const user: User = {
       id: randomUUID(),
-      name: "",
+      name,
       phone,
       email: "",
       savedProductIds: [],
@@ -831,8 +845,12 @@ export function upsertUser(phone: string): User {
  */
 export function upsertGoogleUser(profile: { sub: string; email: string; name: string }): User {
   return update((db) => {
-    const existing = db.users.find((user) => user.googleId === profile.sub);
+    const existing =
+      db.users.find((user) => user.googleId === profile.sub) ||
+      db.users.find((user) => user.emailVerified && user.email === profile.email);
     if (existing) {
+      existing.googleId ||= profile.sub;
+      existing.emailVerified = true;
       if (!existing.name) existing.name = cleanText(profile.name, 80);
       if (!existing.email) existing.email = profile.email;
       return existing;
@@ -843,6 +861,33 @@ export function upsertGoogleUser(profile: { sub: string; email: string; name: st
       phone: "",
       email: profile.email,
       googleId: profile.sub,
+      emailVerified: true,
+      savedProductIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    db.users.push(user);
+    return user;
+  });
+}
+
+/**
+ * Email OTP only opens accounts that already proved this inbox (email OTP or Google).
+ * A phone account that typed the same address into the profile is not a match.
+ */
+export function upsertEmailUser(email: string, name = ""): User {
+  return update((db) => {
+    const existing = db.users.find((user) => user.email === email && (user.emailVerified || user.googleId));
+    if (existing) {
+      existing.emailVerified = true;
+      if (!existing.name && name) existing.name = name;
+      return existing;
+    }
+    const user: User = {
+      id: randomUUID(),
+      name,
+      phone: "",
+      email,
+      emailVerified: true,
       savedProductIds: [],
       createdAt: new Date().toISOString(),
     };
@@ -858,10 +903,16 @@ export function updateProfile(userId: string, input: { name?: string; email?: st
     const name = cleanText(input.name, 80);
     if (name && name.length < 2) throw new ApiError(400, "Enter your name.");
     if (input.email) {
-      const email = cleanText(input.email, 120);
+      const email = cleanText(input.email, 120).toLowerCase();
       if (email && !isEmail(email)) throw new ApiError(400, "Enter a valid email address.");
-      user.email = email;
-    } else if (input.email === "") user.email = "";
+      if (email !== user.email) {
+        user.email = email;
+        user.emailVerified = false;
+      }
+    } else if (input.email === "") {
+      user.email = "";
+      user.emailVerified = false;
+    }
     if (name) user.name = name;
     return publicUser(user);
   });
@@ -1292,21 +1343,21 @@ export function recordAnalytics(event: string, props: Record<string, unknown>) {
   return { ok: true };
 }
 
-export function saveOtp(phone: string, codeHash: string) {
+export function saveOtp(target: string, codeHash: string) {
   update((db) => {
-    db.otps = db.otps.filter((otp) => otp.phone !== phone);
-    db.otps.push({ phone, codeHash, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0 });
+    db.otps = db.otps.filter((otp) => otp.target !== target);
+    db.otps.push({ target, codeHash, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0 });
   });
 }
 
-export function consumeOtp(phone: string, codeHash: string) {
+export function consumeOtp(target: string, codeHash: string) {
   return update((db) => {
-    const otp = db.otps.find((item) => item.phone === phone);
+    const otp = db.otps.find((item) => item.target === target);
     if (!otp || otp.expiresAt < Date.now()) throw new ApiError(400, "That code has expired. Request a new one.");
     otp.attempts += 1;
     if (otp.attempts > 5) throw new ApiError(429, "Too many attempts. Request a new code.");
     if (otp.codeHash !== codeHash) throw new ApiError(400, "That code is incorrect.");
-    db.otps = db.otps.filter((item) => item.phone !== phone);
+    db.otps = db.otps.filter((item) => item.target !== target);
     return true;
   });
 }

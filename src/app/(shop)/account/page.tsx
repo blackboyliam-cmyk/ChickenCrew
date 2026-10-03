@@ -64,9 +64,17 @@ export default function ProfilePage() {
           <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
             Mobile number
           </Label>
-          <Input id="phone" className="mt-1 h-11 bg-muted" value={user.phone || "Signed in with Google"} readOnly aria-describedby="phone-note" />
+          <Input
+            id="phone"
+            className="mt-1 h-11 bg-muted"
+            value={user.phone || (user.email ? "Signed in with email" : "Signed in with Google")}
+            readOnly
+            aria-describedby="phone-note"
+          />
           <p id="phone-note" className="mt-1 text-xs text-muted-foreground">
-            {user.phone ? "Used to log in. It can't be changed here." : "Add a mobile number to each delivery address so the rider can call you."}
+            {user.phone
+              ? "Used to log in. It can't be changed here."
+              : "Add a mobile number to each delivery address so the rider can call you."}
           </p>
         </div>
         <div>

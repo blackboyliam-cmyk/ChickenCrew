@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Clock3, MapPin, RotateCcw } from "lucide-react";
 import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
+import { cn } from "@/lib/utils";
 
 const PERKS = [
   { icon: Clock3, text: "Track every order and delivery slot" },
@@ -19,6 +20,15 @@ function SignIn() {
   const raw = params.get("next") || "/account";
   const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/account";
   const error = params.get("error");
+  const signup = params.get("mode") === "signup";
+
+  function setMode(create: boolean) {
+    const query = new URLSearchParams();
+    if (next !== "/account") query.set("next", next);
+    if (create) query.set("mode", "signup");
+    const qs = query.toString();
+    router.replace(qs ? `/login?${qs}` : "/login");
+  }
 
   return (
     <div className="flex justify-center py-6 md:py-12">
@@ -47,18 +57,43 @@ function SignIn() {
 
         <section className="px-5 py-8 sm:px-10 md:py-12">
           <div className="mx-auto max-w-sm">
-            <h1 className="text-[28px] font-extrabold tracking-tight">Sign in</h1>
+            <div className="grid grid-cols-2 rounded-xl bg-muted p-1">
+              {(
+                [
+                  [false, "Sign in"],
+                  [true, "Create account"],
+                ] as const
+              ).map(([create, label]) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setMode(create)}
+                  aria-pressed={signup === create}
+                  className={cn(
+                    "h-10 rounded-lg text-sm font-semibold transition-colors",
+                    signup === create ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <h1 className="mt-6 text-[28px] font-extrabold tracking-tight">{signup ? "Create account" : "Sign in"}</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              New here? Just enter your number — we&apos;ll create your account.
+              {signup
+                ? "Add your name, then confirm with a code on your mobile or email."
+                : "Use the mobile number or email on your account."}
             </p>
             {error && (
               <p className="mt-5 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-                {error === "google_off" ? "Google sign-in isn't set up yet. Use your mobile number." : "Google sign-in didn't finish. Please try again."}
+                {error === "google_off"
+                  ? "Google sign-in isn't set up yet. Use your mobile number or email."
+                  : "Google sign-in didn't finish. Please try again."}
               </p>
             )}
             <div className="mt-7">
               <GoogleButton next={next} />
-              <OtpForm onDone={() => router.push(next)} />
+              <OtpForm key={signup ? "signup" : "signin"} signup={signup} submitLabel={signup ? "Create account" : "Sign in"} onDone={() => router.push(next)} />
             </div>
           </div>
         </section>
