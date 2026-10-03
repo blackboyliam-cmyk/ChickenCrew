@@ -150,14 +150,14 @@ function Header() {
         <button
           type="button"
           onClick={openSearch}
-          className="ml-auto hidden h-11 w-full max-w-sm items-center gap-2.5 rounded-xl border bg-background px-3.5 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/20 md:flex"
+          className="hidden h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl border bg-background px-3.5 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/20 md:flex lg:max-w-sm"
         >
           <Search className="size-4 shrink-0" aria-hidden />
           <span className="truncate">Search chicken, cuts, combos…</span>
         </button>
 
         <div className="ml-auto flex items-center gap-1 md:ml-0 md:gap-2">
-          <LocationPill className="hidden md:flex" next={next} />
+          <LocationPill className="hidden max-w-44 shrink md:flex" next={next} />
           <button
             type="button"
             onClick={openSearch}

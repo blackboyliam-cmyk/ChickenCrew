@@ -14,16 +14,16 @@ export function Mark({ className = "size-5" }: { className?: string }) {
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link href="/" className="group flex min-w-0 items-center gap-2.5" aria-label="ChickenCrew home">
+    <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label="ChickenCrew home">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-transform duration-200 group-hover:-rotate-6 md:size-10">
         <Mark />
       </span>
-      <span className="min-w-0">
-        <span className="block truncate font-[family-name:var(--font-plus-jakarta)] text-base leading-none font-extrabold tracking-tight text-foreground md:text-[17px]">
+      <span>
+        <span className="block font-[family-name:var(--font-plus-jakarta)] text-base leading-none font-extrabold tracking-tight whitespace-nowrap text-foreground md:text-[17px]">
           Chicken<span className="text-primary">Crew</span>
         </span>
         {!compact && (
-          <span className="mt-1 hidden text-[11px] font-medium text-muted-foreground sm:block">
+          <span className="mt-1 hidden text-[11px] font-medium whitespace-nowrap text-muted-foreground lg:block">
             by Karthika Chicken Centre
           </span>
         )}
