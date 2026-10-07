@@ -52,7 +52,7 @@ type AddressForm = {
 };
 
 export default function CheckoutPage() {
-  const { user, cart, location, refresh, refreshUser, settings, setLocation } = useShop();
+  const { user, ready, cart, location, refresh, refreshUser, settings, setLocation } = useShop();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -291,6 +291,14 @@ export default function CheckoutPage() {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
       idempotencyKey.current = crypto.randomUUID();
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (!user) {

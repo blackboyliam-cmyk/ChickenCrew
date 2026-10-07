@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
+import { BellRing, CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
 import { OrderTracking } from "@/components/site/order-tracking";
 import { ErrorState, ListSkeleton } from "@/components/site/states";
 import { useShop } from "@/components/site/shop-context";
@@ -25,6 +25,27 @@ const STEPS = [
   ["delivered", "Delivered"],
 ] as const;
 
+function alertMessage(order: Order, shopName: string, origin: string) {
+  const address = order.address;
+  const payment =
+    order.paymentStatus === "paid" ? "Paid online" : order.paymentMethod === "cod" ? "Cash on delivery" : "Online payment pending";
+  return [
+    `Hi ${shopName}, I just placed order #${order.number}.`,
+    "",
+    "Items:",
+    ...order.items.map((item) => `- ${item.name} ${item.weight} × ${item.qty}`),
+    "",
+    `Total: ${formatINR(order.total)} (${payment})`,
+    `Delivery: ${order.slot.date} · ${order.slot.label}`,
+    `Name: ${address.name}`,
+    `Phone: ${address.phone}`,
+    `Address: ${[address.house, address.building, address.street, address.area, address.landmark, address.city].filter(Boolean).join(", ")} ${address.pincode}`,
+    ...(origin ? ["", `Order: ${origin}/admin/orders?open=${order.id}`] : []),
+    "",
+    "Please confirm. Thank you!",
+  ].join("\n");
+}
+
 export default function OrderPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
@@ -33,6 +54,9 @@ export default function OrderPage() {
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"" | "cancel" | "reorder" | "pay">("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => setOrigin(window.location.origin), []);
 
   async function load() {
     try {
@@ -120,6 +144,9 @@ export default function OrderPage() {
   const showSuccess = placed && !cancelled && !pending;
   const canCancel = ["placed", "confirmed", "pending_payment"].includes(order.status);
   const address = order.address;
+  const shopWhatsapp = settings.whatsapp || settings.phone;
+  const alertHref =
+    shopWhatsapp && !cancelled && order.status !== "delivered" ? waLink(shopWhatsapp, alertMessage(order, settings.name, origin)) : null;
 
   return (
     <div className="mx-auto max-w-3xl py-6 md:py-10">
@@ -140,7 +167,18 @@ export default function OrderPage() {
               </span>
             </span>
           </div>
-          <div className="mt-6 grid w-full max-w-sm grid-cols-2 gap-2">
+          {alertHref && (
+            <a
+              href={alertHref}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-success text-sm font-bold tracking-wide text-white uppercase hover:bg-success/90"
+            >
+              <BellRing className="size-4" aria-hidden />
+              Alert the shop
+            </a>
+          )}
+          <div className={cn("grid w-full max-w-sm grid-cols-2 gap-2", alertHref ? "mt-2" : "mt-6")}>
             <a
               href="#tracking"
               className="inline-flex h-12 items-center justify-center rounded-xl bg-primary text-sm font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary-dark"
@@ -367,6 +405,17 @@ export default function OrderPage() {
             <FileText className="size-4" aria-hidden />
             Bill
           </Link>
+        )}
+        {alertHref && !showSuccess && (
+          <a
+            href={alertHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white hover:bg-success/90"
+          >
+            <BellRing className="size-4" aria-hidden />
+            Alert the shop
+          </a>
         )}
         {settings.whatsapp && (
           <a

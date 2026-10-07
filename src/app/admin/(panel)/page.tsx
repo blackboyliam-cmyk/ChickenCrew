@@ -110,7 +110,7 @@ export default function AdminHome() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Panel
           title="Recent orders"
           action={

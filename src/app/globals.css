@@ -19,7 +19,7 @@
   --color-charcoal: var(--charcoal);
   --ease-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-pop: pop 220ms var(--ease-snappy);
-  --animate-fade-up: fade-up 220ms var(--ease-snappy) both;
+  --animate-fade-up: fade-up 220ms var(--ease-snappy) backwards;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);

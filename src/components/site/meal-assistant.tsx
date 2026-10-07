@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChefHat, Dumbbell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,9 @@ export function openMealAssistant() {
 
 export function MealAssistant() {
   const { cart } = useShop();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [prompted, setPrompted] = useState(false);
   const [productName, setProductName] = useState("");
   const [mode, setMode] = useState<Mode>("cooking");
   const [reply, setReply] = useState("");
@@ -32,7 +35,8 @@ export function MealAssistant() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    function show(name: string) {
+    function show(name: string, auto: boolean) {
+      setPrompted(auto);
       setProductName(name);
       setMode("cooking");
       setReply("");
@@ -48,9 +52,9 @@ export function MealAssistant() {
       } catch {
         return;
       }
-      show((event as CustomEvent<{ name?: string }>).detail?.name || "");
+      show((event as CustomEvent<{ name?: string }>).detail?.name || "", true);
     }
-    const onOpen = () => show("");
+    const onOpen = () => show("", false);
     window.addEventListener("cc:added", onAdded);
     window.addEventListener(OPEN_ASSISTANT, onOpen);
     return () => {
@@ -87,20 +91,33 @@ export function MealAssistant() {
     }
   }
 
-  if (!open) return null;
+  if (!open) {
+    if (pathname === "/checkout" || pathname === "/login") return null;
+    return (
+      <button
+        type="button"
+        onClick={openMealAssistant}
+        aria-label="Ask the cooking bot"
+        className="fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-40 grid size-14 animate-pop place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition-transform hover:scale-105 hover:bg-primary-dark md:bottom-6"
+      >
+        <ChefHat className="size-6" aria-hidden />
+      </button>
+    );
+  }
   const chips = mode === "gym" ? gymChips : cookingChips;
   const name = productName || cart?.items[0]?.name || "";
 
   return (
     <section
-      className="fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-40 w-[min(100%-2rem,22rem)] animate-fade-up rounded-2xl border bg-card p-4 shadow-float md:bottom-6"
+      className="fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-40 max-h-[calc(100dvh-14rem)] w-[min(100%-2rem,22rem)] animate-fade-up overflow-y-auto overscroll-contain rounded-2xl border bg-card p-4 shadow-float md:bottom-6 md:max-h-[calc(100dvh-8rem)]"
       aria-label="Cooking ideas"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">What are you making?</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {name ? `${name} is in your cart. ` : ""}Get ideas, or close this — we won&apos;t ask again.
+            {name ? `${name} is in your cart. ` : ""}
+            {prompted ? "Get ideas, or close this — we won't ask again." : "Tell us the dish and we'll suggest cuts."}
           </p>
         </div>
         <Button type="button" variant="ghost" size="icon" aria-label="Close cooking ideas" onClick={() => setOpen(false)}>

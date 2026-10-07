@@ -82,7 +82,7 @@ function SignIn() {
             <h1 className="mt-6 text-[28px] font-extrabold tracking-tight">{signup ? "Create account" : "Sign in"}</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {signup
-                ? "Add your name, then confirm with a code on your mobile or email."
+                ? "Add your name, then confirm with a code sent to your mobile."
                 : "Use the mobile number or email on your account."}
             </p>
             {error && (

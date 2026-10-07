@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ActiveOrderBar } from "@/components/site/active-order-bar";
 import { CategoryIcon } from "@/components/site/category-icons";
 import { Logo } from "@/components/site/logo";
 import { MealAssistant } from "@/components/site/meal-assistant";
@@ -189,6 +190,7 @@ function Header() {
       <div className="border-t border-border/60 md:hidden">
         <LocationPill className="flex h-10 w-full px-4" compact next={next} />
       </div>
+      <ActiveOrderBar />
     </header>
   );
 }
@@ -252,21 +254,21 @@ function LocationPill({
       )}
     >
       <MapPin className={cn("shrink-0 text-primary", compact ? "size-3.5" : "size-4")} aria-hidden />
-      <span className="min-w-0 leading-tight">
+      <span className={cn("leading-tight", compact ? "shrink-0" : "min-w-0")}>
         {!compact && <span className="block text-[11px] text-muted-foreground">Delivering to</span>}
-        <span className="flex items-center gap-1 truncate font-semibold text-foreground">
+        <span className="flex items-center gap-1 truncate whitespace-nowrap font-semibold text-foreground">
           {compact && <span className="font-normal text-muted-foreground">Deliver to</span>}
           {location.pincode || "Select location"}
           <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         </span>
       </span>
       {compact && (
-        <span className="ml-auto flex shrink-0 items-center gap-1.5 truncate text-muted-foreground">
+        <span className="ml-auto flex min-w-0 items-center gap-1.5 text-muted-foreground">
           {status === "no" ? (
             <span className="font-medium text-destructive">Not serviceable</span>
           ) : next ? (
             <>
-              <Clock className="size-3.5" aria-hidden />
+              <Clock className="size-3.5 shrink-0" aria-hidden />
               <span className="truncate">Next: {next}</span>
             </>
           ) : null}
