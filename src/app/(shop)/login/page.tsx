@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Clock3, MapPin, RotateCcw } from "lucide-react";
 import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
+import { PasswordSignIn } from "@/components/site/password-sign-in";
 import { cn } from "@/lib/utils";
 
 const PERKS = [
@@ -94,6 +95,19 @@ function SignIn() {
             <div className="mt-7">
               <GoogleButton next={next} />
               <OtpForm key={signup ? "signup" : "signin"} signup={signup} submitLabel={signup ? "Create account" : "Sign in"} onDone={() => router.push(next)} />
+              {!signup && (
+                <>
+                  <div className="relative my-8">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <span className="relative mx-auto block w-fit bg-white px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Or email &amp; password
+                    </span>
+                  </div>
+                  <PasswordSignIn onDone={() => router.push(next)} />
+                </>
+              )}
             </div>
           </div>
         </section>

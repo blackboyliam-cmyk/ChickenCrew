@@ -16,7 +16,9 @@ npm run dev
 
 Open [http://127.0.0.1:4317](http://127.0.0.1:4317).
 
-Local admin password in `.env.local` is `crew-admin`. Change `ADMIN_PASSWORD` and `AUTH_SECRET` before anyone else can reach the server.
+Your admin sign-in is `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env.local` (local password `crew-admin`). Use those on `/login` or `/admin/login`. Signing in on the shop with that pair also opens the admin panel. **Remember me** keeps the session for 30 days. Do not give this pair to Razorpay.
+
+Razorpay's test account is a different pair: `TEST_LOGIN_EMAIL` and `TEST_LOGIN_PASSWORD`. That login is a normal customer on `/login` and cannot open admin. Change `AUTH_SECRET` before anyone else can reach the server.
 
 Login uses a mobile OTP. Without an SMS provider, development mode returns the code on screen when `OTP_DEV_MODE=true` and `NODE_ENV` is not production. Production does not reveal the code. Plug in an SMS sender in `src/app/api/auth/otp/send/route.ts` before launch.
 

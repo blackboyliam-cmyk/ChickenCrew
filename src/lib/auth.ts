@@ -44,9 +44,22 @@ function baseCookie(maxAge: number) {
   };
 }
 
-export async function setSessionCookie(userId: string) {
+const USER_SESSION_SEC = 60 * 60 * 24;
+const USER_REMEMBER_SEC = 60 * 60 * 24 * 30;
+const ADMIN_SESSION_SEC = 60 * 60 * 12;
+const ADMIN_REMEMBER_SEC = 60 * 60 * 24 * 30;
+
+function secureEqual(a: string, b: string) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+export async function setSessionCookie(userId: string, remember = true) {
+  const maxAge = remember ? USER_REMEMBER_SEC : USER_SESSION_SEC;
   const jar = await cookies();
-  jar.set(SESSION, sign({ uid: userId, exp: Date.now() + 1000 * 60 * 60 * 24 * 30 }), baseCookie(60 * 60 * 24 * 30));
+  jar.set(SESSION, sign({ uid: userId, exp: Date.now() + maxAge * 1000 }), baseCookie(maxAge));
 }
 
 export async function clearSessionCookie() {
@@ -61,9 +74,10 @@ export async function readUserId(): Promise<string | null> {
   return session.uid;
 }
 
-export async function setAdminCookie() {
+export async function setAdminCookie(remember = false) {
+  const maxAge = remember ? ADMIN_REMEMBER_SEC : ADMIN_SESSION_SEC;
   const jar = await cookies();
-  jar.set(ADMIN, sign({ role: "admin", exp: Date.now() + 1000 * 60 * 60 * 12 }), baseCookie(60 * 60 * 12));
+  jar.set(ADMIN, sign({ role: "admin", exp: Date.now() + maxAge * 1000 }), baseCookie(maxAge));
 }
 
 export async function clearAdminCookie() {
@@ -129,8 +143,35 @@ export function newOtpCode() {
 export function adminPasswordOk(password: string) {
   const expected = process.env.ADMIN_PASSWORD || "";
   if (!expected || !password) return false;
-  const left = Buffer.from(password);
-  const right = Buffer.from(expected);
-  if (left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
+  return secureEqual(password, expected);
+}
+
+/** Shop admin page. Password must match. Email must match when ADMIN_EMAIL is set. */
+export function adminLoginOk(email: string, password: string) {
+  if (!adminPasswordOk(password)) return false;
+  const expectedEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  if (!expectedEmail) return true;
+  return secureEqual(email.trim().toLowerCase(), expectedEmail);
+}
+
+/** Your own shop login. Opens the customer account and the admin panel. */
+export function ownerLoginOk(email: string, password: string) {
+  const expectedEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  const expectedPassword = process.env.ADMIN_PASSWORD || "";
+  if (!expectedEmail || !expectedPassword) return false;
+  return secureEqual(email.trim().toLowerCase(), expectedEmail) && secureEqual(password, expectedPassword);
+}
+
+/** Customer test account for payment review. Never an admin session. */
+export function reviewLoginOk(email: string, password: string) {
+  const expectedEmail = (process.env.TEST_LOGIN_EMAIL || "").trim().toLowerCase();
+  const expectedPassword = process.env.TEST_LOGIN_PASSWORD || "";
+  if (!expectedEmail || !expectedPassword) return false;
+  return secureEqual(email.trim().toLowerCase(), expectedEmail) && secureEqual(password, expectedPassword);
+}
+
+export function passwordLoginConfigured() {
+  const owner = Boolean((process.env.ADMIN_EMAIL || "").trim() && process.env.ADMIN_PASSWORD);
+  const review = Boolean((process.env.TEST_LOGIN_EMAIL || "").trim() && process.env.TEST_LOGIN_PASSWORD);
+  return owner || review;
 }

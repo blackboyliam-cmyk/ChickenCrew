@@ -1,18 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { api, ApiClientError } from "@/lib/api-client";
 
+const ADMIN_REMEMBER_EMAIL_KEY = "cc_admin_remember_email";
+
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(ADMIN_REMEMBER_EMAIL_KEY);
+      if (saved) {
+        setEmail(saved);
+        setRemember(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -20,7 +37,13 @@ export default function AdminLoginPage() {
     setBusy(true);
     setError("");
     try {
-      await api("/api/admin/login", { method: "POST", body: { password } });
+      await api("/api/admin/login", { method: "POST", body: { email: email.trim(), password, remember } });
+      try {
+        if (remember && email.trim()) localStorage.setItem(ADMIN_REMEMBER_EMAIL_KEY, email.trim().toLowerCase());
+        else localStorage.removeItem(ADMIN_REMEMBER_EMAIL_KEY);
+      } catch {
+        /* ignore */
+      }
       router.push("/admin");
       router.refresh();
     } catch (err) {
@@ -52,7 +75,23 @@ export default function AdminLoginPage() {
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Shop admin</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to manage orders, products and delivery.</p>
 
-          <label htmlFor="password" className="mt-6 block text-[13px] font-semibold">
+          <label htmlFor="email" className="mt-6 block text-[13px] font-semibold">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError("");
+            }}
+            className="mt-1.5 h-12 w-full rounded-xl border bg-white px-3.5 text-[15px] outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
+            placeholder="you@example.com"
+          />
+
+          <label htmlFor="password" className="mt-4 block text-[13px] font-semibold">
             Password
           </label>
           <div className="mt-1.5 flex h-12 items-center rounded-xl border bg-white focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
@@ -78,6 +117,10 @@ export default function AdminLoginPage() {
               {show ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
             </button>
           </div>
+          <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
+            <Checkbox checked={remember} onCheckedChange={(value) => setRemember(value === true)} />
+            Remember me
+          </label>
           {error && (
             <p className="mt-2 text-sm text-destructive" role="alert">
               {error}
