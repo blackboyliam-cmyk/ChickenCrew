@@ -25,6 +25,7 @@ import {
 } from "@/components/admin/forms";
 import { formatINR } from "@/lib/money";
 import type { Category, Product } from "@/lib/types";
+import { parseGrams } from "@/lib/weights";
 
 type VariantDraft = { id?: string; label: string; sku: string; price: string; mrp: string; stock: string; active: boolean; maxQty: string };
 
@@ -41,8 +42,24 @@ type Draft = {
   imageAlt: string;
   featured: boolean;
   active: boolean;
+  perKg: string;
   variants: VariantDraft[];
 };
+
+function priceFor(perKg: string, label: string): string | null {
+  const rate = Number(perKg);
+  const grams = parseGrams(label);
+  if (!perKg.trim() || !Number.isFinite(rate) || rate <= 0 || !grams) return null;
+  return String(Math.round((rate * grams) / 1000));
+}
+
+function perKgOf(product: Product): string {
+  for (const variant of product.variants) {
+    const grams = parseGrams(variant.label);
+    if (grams) return String(Math.round((variant.price / 100) * (1000 / grams)));
+  }
+  return "";
+}
 
 const blankVariant = (label = "500g"): VariantDraft => ({ label, sku: "", price: "", mrp: "", stock: "0", active: true, maxQty: "10" });
 
@@ -58,6 +75,7 @@ const blank: Draft = {
   imageAlt: "",
   featured: false,
   active: true,
+  perKg: "",
   variants: [blankVariant()],
 };
 
@@ -75,6 +93,7 @@ function toDraft(product: Product): Draft {
     imageAlt: product.images[0]?.alt || "",
     featured: product.featured,
     active: product.active,
+    perKg: perKgOf(product),
     variants: product.variants.map((variant) => ({
       id: variant.id,
       label: variant.label,
@@ -132,6 +151,21 @@ export default function ProductsAdmin() {
   const setVariant = (index: number, patch: Partial<VariantDraft>) =>
     setDraft((current) =>
       current ? { ...current, variants: current.variants.map((v, i) => (i === index ? { ...v, ...patch } : v)) } : current,
+    );
+  const setPerKg = (perKg: string) =>
+    setDraft((current) =>
+      current
+        ? { ...current, perKg, variants: current.variants.map((v) => ({ ...v, price: priceFor(perKg, v.label) ?? v.price })) }
+        : current,
+    );
+  const setWeight = (index: number, label: string) =>
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            variants: current.variants.map((v, i) => (i === index ? { ...v, label, price: priceFor(current.perKg, label) ?? v.price } : v)),
+          }
+        : current,
     );
 
   async function save(event: React.FormEvent) {
@@ -288,11 +322,21 @@ export default function ProductsAdmin() {
                       <Plus className="size-4" /> Add weight
                     </button>
                   </div>
-                  <div className="mt-2 space-y-2.5">
+                  <Field
+                    label="Price per kg"
+                    prefix="₹"
+                    inputMode="decimal"
+                    value={draft.perKg}
+                    onChange={setPerKg}
+                    placeholder="180"
+                    hint="Fills the price for every weight below. You can still change any weight by hand."
+                    className="mt-3"
+                  />
+                  <div className="mt-3 space-y-2.5">
                     {draft.variants.map((variant, index) => (
                       <div key={variant.id || index} className={cn("rounded-xl border bg-muted/30 p-3", !variant.active && "opacity-70")}>
-                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                          <Field label="Weight" value={variant.label} onChange={(v) => setVariant(index, { label: v })} placeholder="500g" />
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <Field label="Weight" value={variant.label} onChange={(v) => setWeight(index, v)} placeholder="500g" />
                           <Field label="Price" prefix="₹" inputMode="decimal" value={variant.price} onChange={(v) => setVariant(index, { price: v })} />
                           <Field label="MRP" prefix="₹" inputMode="decimal" value={variant.mrp} onChange={(v) => setVariant(index, { mrp: v })} />
                           <Field label="Stock" inputMode="numeric" value={variant.stock} onChange={(v) => setVariant(index, { stock: v })} />
