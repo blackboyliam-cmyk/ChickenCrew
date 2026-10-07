@@ -93,21 +93,21 @@ function SignIn() {
               </p>
             )}
             <div className="mt-7">
-              <GoogleButton next={next} />
-              <OtpForm key={signup ? "signup" : "signin"} signup={signup} submitLabel={signup ? "Create account" : "Sign in"} onDone={() => router.push(next)} />
               {!signup && (
                 <>
+                  <PasswordSignIn onDone={() => router.push(next)} />
                   <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
                     <span className="relative mx-auto block w-fit bg-white px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Or email &amp; password
+                      Or a one-time code
                     </span>
                   </div>
-                  <PasswordSignIn onDone={() => router.push(next)} />
                 </>
               )}
+              <GoogleButton next={next} />
+              <OtpForm key={signup ? "signup" : "signin"} signup={signup} submitLabel={signup ? "Create account" : "Sign in"} onDone={() => router.push(next)} />
             </div>
           </div>
         </section>

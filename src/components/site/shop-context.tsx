@@ -19,7 +19,7 @@ type ShopContextValue = {
   ready: boolean;
   refresh: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  setLocation: (pincode: string) => Promise<void>;
+  setLocation: (pincode: string) => Promise<LocationState>;
   add: (productId: string, variantId: string, qty?: number, opts?: { silent?: boolean }) => Promise<void>;
   setQty: (itemId: string, qty: number) => Promise<void>;
   toggleSaved: (productId: string) => Promise<void>;
@@ -64,6 +64,7 @@ export function ShopProvider({ settings, children }: { settings: PublicSettings;
     const next = { pincode: result.pincode, ok: result.ok, message: result.message };
     setLocationState(next);
     localStorage.setItem(LOC, JSON.stringify(next));
+    return next;
   }
 
   useEffect(() => {

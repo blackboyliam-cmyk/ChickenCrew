@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
+import { PasswordSignIn } from "@/components/site/password-sign-in";
 import { openLocation } from "@/components/site/site-shell";
 import { useShop } from "@/components/site/shop-context";
 import { EmptyState } from "@/components/site/states";
@@ -51,7 +52,7 @@ type AddressForm = {
 };
 
 export default function CheckoutPage() {
-  const { user, cart, location, refresh, refreshUser, settings } = useShop();
+  const { user, cart, location, refresh, refreshUser, settings, setLocation } = useShop();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -200,9 +201,20 @@ export default function CheckoutPage() {
 
   async function place() {
     if (!cart) return;
-    if (!location.ok) {
-      setError(location.message || "Choose a delivery location inside the service area.");
-      return;
+    const pin = form.pincode.trim();
+    if (location.ok !== true || location.pincode !== pin) {
+      try {
+        const checked = await setLocation(pin);
+        if (!checked.ok) {
+          setError(checked.message || "We're not delivering to this pincode yet.");
+          setStep(0);
+          return;
+        }
+      } catch (err) {
+        setError(err instanceof ApiClientError ? err.message : "Enter a delivery pincode.");
+        setStep(0);
+        return;
+      }
     }
     const [slotDate, slotTemplateId] = slot.split("|");
     if (!slotDate || !slotTemplateId) {
@@ -292,6 +304,15 @@ export default function CheckoutPage() {
           </a>
         </p>
         <div className="mt-6 rounded-2xl border bg-card p-5 shadow-card">
+          <PasswordSignIn onDone={() => void refreshUser()} />
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <span className="relative mx-auto block w-fit bg-card px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Or a one-time code
+            </span>
+          </div>
           <GoogleButton next="/checkout" />
           <OtpForm onDone={() => void refreshUser()} submitLabel="Continue to checkout" />
         </div>
@@ -661,7 +682,7 @@ export default function CheckoutPage() {
               </div>
               <button
                 type="button"
-                disabled={busy !== "" || (step === 3 && location.ok === false)}
+                disabled={busy !== ""}
                 onClick={() => (step < 3 ? next() : void place())}
                 className="ml-auto inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold tracking-wide text-primary-foreground uppercase transition-colors hover:bg-primary-dark disabled:opacity-60 md:ml-0 md:h-[52px] md:flex-none md:min-w-64"
               >

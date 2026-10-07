@@ -434,7 +434,7 @@ export function buildFaqs(settings: PublicSettings, slotLabels: string[]): Faq[]
     : "The shop has not published delivery slots yet.";
   const area = settings.servicePincodes.length
     ? `Current delivery pincodes: ${settings.servicePincodes.join(", ")}.`
-    : "The shop has not published delivery pincodes yet, so checkout stays closed until it does.";
+    : "Any Indian pincode can be used until the shop publishes its delivery list.";
   const payment = [
     settings.onlineReady
       ? "Yes. Online payment is confirmed only after the server verifies the payment gateway."
@@ -530,17 +530,15 @@ export function listDeliverySlots(now = new Date()): { date: string; label: stri
   return groups;
 }
 
+function servesPincode(settings: { servicePincodes: string[] }, pincode: string) {
+  if (!settings.servicePincodes.length) return true;
+  return settings.servicePincodes.includes(pincode);
+}
+
 export function checkPincode(pincode: string) {
   if (!isPincode(pincode)) throw new ApiError(400, "Enter a 6-digit pincode.");
   const settings = getPublicSettings();
-  if (!settings.servicePincodes.length) {
-    return {
-      ok: false,
-      pincode,
-      message: "The shop has not published a delivery area yet.",
-    };
-  }
-  if (!settings.servicePincodes.includes(pincode)) {
+  if (!servesPincode(settings, pincode)) {
     return { ok: false, pincode, message: "We're not delivering to this location yet." };
   }
   return { ok: true, pincode, message: `Delivering to ${pincode}` };
@@ -1108,10 +1106,7 @@ export function createOrder(input: CheckoutInput): Order {
 }
 
 function checkAgainst(settings: ShopSettings, pincode: string) {
-  if (!settings.servicePincodes.length) {
-    return { ok: false, message: "The shop has not published a delivery area yet." };
-  }
-  if (!settings.servicePincodes.includes(pincode)) {
+  if (!servesPincode(settings, pincode)) {
     return { ok: false, message: "We're not delivering to this location yet." };
   }
   return { ok: true, message: "" };
