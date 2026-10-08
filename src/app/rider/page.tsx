@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Banknote, Check, Loader2, LogOut, MapPinOff, MessageCircle, Navigation, Phone, RefreshCw, Smartphone } from "lucide-react";
+import { RiderLangSwitch, useRiderLang, type RiderTextKey } from "@/components/rider/rider-lang";
 import { api, ApiClientError } from "@/lib/api-client";
 import { directionsUrl } from "@/lib/maps";
 import { formatINR } from "@/lib/money";
@@ -36,12 +37,12 @@ type Dashboard = {
 
 type GeoState = "off" | "starting" | "on" | "denied" | "unsupported";
 
-const STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
-  placed: "New",
-  confirmed: "Confirmed",
-  preparing: "Being packed",
-  ready: "Ready to pick up",
-  out_for_delivery: "On the way",
+const STATUS_LABEL: Partial<Record<OrderStatus, RiderTextKey>> = {
+  placed: "status_placed",
+  confirmed: "status_confirmed",
+  preparing: "status_preparing",
+  ready: "status_ready",
+  out_for_delivery: "status_out_for_delivery",
 };
 
 const time = new Intl.DateTimeFormat("en-IN", { timeStyle: "short", timeZone: "Asia/Kolkata" });
@@ -114,6 +115,7 @@ function useLocationSharing(active: boolean) {
 
 export default function RiderPage() {
   const router = useRouter();
+  const { t, tError } = useRiderLang();
   const [data, setData] = useState<Dashboard | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -158,9 +160,9 @@ export default function RiderPage() {
       <main className="grid min-h-screen place-items-center p-6 text-center">
         {error ? (
           <div>
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="text-sm text-muted-foreground">{tError(error)}</p>
             <button type="button" onClick={() => void load()} className="mt-3 text-sm font-semibold text-primary">
-              Try again
+              {t("tryAgain")}
             </button>
           </div>
         ) : (
@@ -175,15 +177,18 @@ export default function RiderPage() {
       <header className="sticky top-0 z-20 bg-charcoal px-4 pt-4 pb-5 text-white">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-white/55">ChickenCrew rider</p>
-            <h1 className="truncate text-xl font-extrabold tracking-tight">Hi, {data.rider.name.split(" ")[0]}</h1>
+            <p className="text-xs text-white/55">{t("riderLabel")}</p>
+            <h1 className="truncate text-xl font-extrabold tracking-tight">
+              {t("hi")}, {data.rider.name.split(" ")[0]}
+            </h1>
           </div>
           <div className="flex items-center gap-1">
+            <RiderLangSwitch className="bg-white/10 text-white hover:bg-white/15" />
             <button
               type="button"
               onClick={() => void load()}
               className="grid size-10 place-items-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white"
-              aria-label="Refresh"
+              aria-label={t("refresh")}
             >
               <RefreshCw className={cn("size-4.5", loading && "animate-spin")} />
             </button>
@@ -191,7 +196,7 @@ export default function RiderPage() {
               type="button"
               onClick={() => void signOut()}
               className="grid size-10 place-items-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white"
-              aria-label="Sign out"
+              aria-label={t("signOut")}
             >
               <LogOut className="size-4.5" />
             </button>
@@ -199,9 +204,9 @@ export default function RiderPage() {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
-            ["To deliver", String(data.orders.length)],
-            ["Delivered today", String(data.delivered.length)],
-            ["Cash with you", formatINR(data.cashInHand)],
+            [t("toDeliver"), String(data.orders.length)],
+            [t("deliveredToday"), String(data.delivered.length)],
+            [t("cashWithYou"), formatINR(data.cashInHand)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl bg-white/8 px-3 py-2.5">
               <p className="text-[11px] text-white/55">{label}</p>
@@ -225,30 +230,28 @@ export default function RiderPage() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
                 <span className="relative inline-flex size-2.5 rounded-full bg-success" />
               </span>
-              Sharing your location with the customer. Keep this screen open.
+              {t("sharing")}
             </>
           ) : geo === "starting" ? (
             <>
-              <Loader2 className="size-4 animate-spin" /> Finding your location…
+              <Loader2 className="size-4 animate-spin" /> {t("finding")}
             </>
           ) : (
             <>
               <MapPinOff className="size-4 shrink-0" />
-              {geo === "denied"
-                ? "Location is blocked. Allow location for this site in your browser settings so customers can track you."
-                : "This browser can't share location."}
+              {geo === "denied" ? t("locationBlocked") : t("locationUnsupported")}
             </>
           )}
         </div>
       )}
 
-      {error && <p className="mx-4 mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+      {error && <p className="mx-4 mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{tError(error)}</p>}
 
-      <section className="mt-4 space-y-3 px-4" aria-label="Deliveries">
+      <section className="mt-4 space-y-3 px-4" aria-label={t("toDeliver")}>
         {data.orders.length === 0 ? (
           <div className="rounded-3xl border border-dashed bg-card px-6 py-12 text-center">
-            <p className="font-bold">No deliveries right now</p>
-            <p className="mt-1 text-sm text-muted-foreground">New orders show up here as soon as the shop assigns them to you.</p>
+            <p className="font-bold">{t("noDeliveries")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("noDeliveriesBody")}</p>
           </div>
         ) : (
           data.orders.map((order) => <DeliveryCard key={order.id} order={order} onChange={load} />)
@@ -258,7 +261,7 @@ export default function RiderPage() {
       {data.delivered.length > 0 && (
         <section className="mt-8 px-4" aria-labelledby="done-title">
           <h2 id="done-title" className="text-sm font-bold">
-            Delivered today
+            {t("deliveredToday")}
           </h2>
           <ul className="mt-2 divide-y rounded-2xl border bg-card">
             {data.delivered.map((order) => (
@@ -273,7 +276,7 @@ export default function RiderPage() {
                 <span className="text-right">
                   <span className="block font-semibold tabular-nums">{formatINR(order.total)}</span>
                   <span className="text-xs text-muted-foreground">
-                    {order.collection ? (order.collection.mode === "cash" ? "Cash" : "UPI") : "Prepaid"}
+                    {order.collection ? (order.collection.mode === "cash" ? t("cash") : t("upi")) : t("prepaid")}
                   </span>
                 </span>
               </li>
@@ -284,7 +287,7 @@ export default function RiderPage() {
 
       {data.shopPhone && (
         <a href={`tel:${data.shopPhone}`} className="mx-4 mt-8 flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground">
-          <Phone className="size-4" /> Call the shop
+          <Phone className="size-4" /> {t("callShop")}
         </a>
       )}
     </main>
@@ -292,6 +295,7 @@ export default function RiderPage() {
 }
 
 function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => Promise<void> }) {
+  const { t, tError } = useRiderLang();
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [code, setCode] = useState("");
@@ -308,7 +312,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
     setError("");
     try {
       await api(`/api/rider/orders/${order.id}`, { method: "POST", body: { action, code, mode } });
-      toast.success(action === "start" ? "Delivery started. Customer can now track you." : `Order #${order.number} delivered.`);
+      toast.success(action === "start" ? t("started") : t("delivered", { number: order.number }));
       setFinishing(false);
       await onChange();
     } catch (err) {
@@ -328,7 +332,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
               onTheWay ? "bg-primary text-white" : "bg-muted text-muted-foreground",
             )}
           >
-            {STATUS_LABEL[order.status] || order.status}
+            {STATUS_LABEL[order.status] ? t(STATUS_LABEL[order.status]!) : order.status}
           </span>
           <span className="text-xs text-muted-foreground">
             #{order.number} · {order.slot.label}
@@ -337,8 +341,8 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
 
         <h3 className="mt-3 text-lg font-extrabold tracking-tight">{address.name}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{addressText(address)}</p>
-        {address.landmark && <p className="mt-0.5 text-sm text-muted-foreground">Near {address.landmark}</p>}
-        {!pinned && <p className="mt-1 text-xs text-[#92400e]">No map pin. Navigation uses the typed address.</p>}
+        {address.landmark && <p className="mt-0.5 text-sm text-muted-foreground">{t("near", { place: address.landmark })}</p>}
+        {!pinned && <p className="mt-1 text-xs text-[#92400e]">{t("noPin")}</p>}
 
         <p className="mt-3 text-sm">{order.items.map((item) => `${item.name} ${item.weight} × ${item.qty}`).join(", ")}</p>
 
@@ -350,7 +354,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
         >
           <span className="flex items-center gap-2 text-sm font-semibold">
             <Banknote className="size-4" />
-            {order.due > 0 ? "Collect on delivery" : "Paid online, nothing to collect"}
+            {order.due > 0 ? t("collect") : t("paidOnline")}
           </span>
           {order.due > 0 && <span className="text-xl font-black tabular-nums">{formatINR(order.due)}</span>}
         </div>
@@ -360,7 +364,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
             href={`tel:+91${address.phone}`}
             className="flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-semibold hover:bg-muted"
           >
-            <Phone className="size-4" /> Call
+            <Phone className="size-4" /> {t("call")}
           </a>
           <a
             href={waLink(address.phone, `Hi ${address.name.split(" ")[0]}, this is your ChickenCrew delivery partner with order #${order.number}.`)}
@@ -368,7 +372,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
             rel="noreferrer"
             className="flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-semibold hover:bg-muted"
           >
-            <MessageCircle className="size-4 text-success" /> WhatsApp
+            <MessageCircle className="size-4 text-success" /> {t("whatsapp")}
           </a>
           <a
             href={directionsUrl(destination)}
@@ -376,7 +380,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
             rel="noreferrer"
             className="flex h-11 items-center justify-center gap-1.5 rounded-xl border text-sm font-semibold hover:bg-muted"
           >
-            <Navigation className="size-4 text-primary" /> Navigate
+            <Navigation className="size-4 text-primary" /> {t("navigate")}
           </a>
         </div>
       </div>
@@ -385,7 +389,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
         <div className="space-y-3 border-t bg-muted/40 p-4">
           {order.needsCode && (
             <label className="block">
-              <span className="text-[13px] font-semibold">Delivery code from the customer</span>
+              <span className="text-[13px] font-semibold">{t("codeLabel")}</span>
               <input
                 inputMode="numeric"
                 autoFocus
@@ -402,12 +406,12 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
           )}
           {order.due > 0 && (
             <fieldset>
-              <legend className="text-[13px] font-semibold">How did they pay {formatINR(order.due)}?</legend>
+              <legend className="text-[13px] font-semibold">{t("howPaid", { amount: formatINR(order.due) })}</legend>
               <div className="mt-1.5 grid grid-cols-2 gap-2">
                 {(
                   [
-                    ["cash", "Cash", Banknote],
-                    ["upi", "UPI to shop", Smartphone],
+                    ["cash", t("cash"), Banknote],
+                    ["upi", t("upiToShop"), Smartphone],
                   ] as const
                 ).map(([value, label, Icon]) => (
                   <button
@@ -429,7 +433,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
         </div>
       )}
 
-      {error && <p className="border-t bg-destructive/10 px-4 py-2.5 text-sm text-destructive">{error}</p>}
+      {error && <p className="border-t bg-destructive/10 px-4 py-2.5 text-sm text-destructive">{tError(error)}</p>}
 
       <div className="flex gap-2 border-t p-3">
         {!onTheWay ? (
@@ -440,7 +444,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
             className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-charcoal text-sm font-bold text-white disabled:opacity-60"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Navigation className="size-4" />}
-            Picked up · Start delivery
+            {t("startDelivery")}
           </button>
         ) : finishing ? (
           <>
@@ -449,7 +453,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
               onClick={() => setFinishing(false)}
               className="h-12 rounded-xl border px-4 text-sm font-semibold hover:bg-muted"
             >
-              Back
+              {t("back")}
             </button>
             <button
               type="button"
@@ -458,7 +462,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-success text-sm font-bold text-white disabled:opacity-50"
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" strokeWidth={3} />}
-              Confirm delivery
+              {t("confirmDelivery")}
             </button>
           </>
         ) : (
@@ -467,7 +471,7 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
             onClick={() => setFinishing(true)}
             className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground hover:bg-primary-dark"
           >
-            <Check className="size-4" strokeWidth={3} /> Mark delivered
+            <Check className="size-4" strokeWidth={3} /> {t("markDelivered")}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { RiderLangProvider } from "@/components/rider/rider-lang";
 
 export const metadata: Metadata = {
   title: "Rider",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#1c1917" };
 
 export default function RiderLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#f6f4f0]">{children}</div>;
+  return (
+    <RiderLangProvider>
+      <div className="min-h-screen bg-[#f6f4f0]">{children}</div>
+    </RiderLangProvider>
+  );
 }

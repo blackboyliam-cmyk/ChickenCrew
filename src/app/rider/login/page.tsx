@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bike, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RiderLangSwitch, useRiderLang } from "@/components/rider/rider-lang";
 import { api, ApiClientError } from "@/lib/api-client";
 
 export default function RiderLoginPage() {
+  const { t, tError } = useRiderLang();
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -35,12 +37,13 @@ export default function RiderLoginPage() {
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
         style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }}
       />
+      <RiderLangSwitch className="absolute top-4 right-4 bg-white/10 text-white hover:bg-white/15" />
       <div className="relative w-full max-w-[400px]">
         <div className="mb-6 flex items-center justify-center gap-2.5 text-white">
           <span className="grid size-10 place-items-center rounded-xl bg-primary text-sm font-black">CC</span>
           <span className="leading-tight">
             <span className="block text-lg font-extrabold tracking-tight">ChickenCrew</span>
-            <span className="block text-xs text-white/55">Rider app</span>
+            <span className="block text-xs text-white/55">{t("appName")}</span>
           </span>
         </div>
 
@@ -48,11 +51,11 @@ export default function RiderLoginPage() {
           <span className="grid size-11 place-items-center rounded-2xl bg-primary/10 text-primary">
             <Bike className="size-5" />
           </span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Rider sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Use the mobile number and PIN the shop gave you.</p>
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{t("signInTitle")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("signInBody")}</p>
 
           <label htmlFor="phone" className="mt-6 block text-[13px] font-semibold">
-            Mobile number
+            {t("mobile")}
           </label>
           <div className="mt-1.5 flex h-12 items-center rounded-xl border bg-white focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
             <span className="pl-3.5 text-[15px] text-muted-foreground">+91</span>
@@ -73,7 +76,7 @@ export default function RiderLoginPage() {
           </div>
 
           <label htmlFor="pin" className="mt-4 block text-[13px] font-semibold">
-            PIN
+            {t("pin")}
           </label>
           <input
             id="pin"
@@ -91,14 +94,14 @@ export default function RiderLoginPage() {
           />
           {error && (
             <p className="mt-2 text-sm text-destructive" role="alert">
-              {error}
+              {tError(error)}
             </p>
           )}
 
           <Button type="submit" disabled={!ready || busy} className="mt-5 h-12 w-full rounded-xl text-[15px] font-bold">
-            {busy ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
+            {busy ? <Loader2 className="size-4 animate-spin" /> : t("signIn")}
           </Button>
-          <p className="mt-4 text-center text-xs text-muted-foreground">Forgot your PIN? Ask the shop to reset it.</p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">{t("forgotPin")}</p>
         </form>
       </div>
     </main>
