@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "cn";
+import { InstallLink } from "@/components/install-app";
 import { api } from "@/lib/api-client";
 
 const LINKS = [
@@ -112,6 +113,7 @@ export function AdminTopbar() {
       <div className="flex h-14 items-center justify-between px-4">
         <Brand />
         <div className="flex items-center gap-1">
+          <InstallLink appName="KCC Admin" className="h-9 rounded-lg px-2.5 text-xs font-semibold text-white/80 hover:bg-white/10" />
           <Link href="/" className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10" aria-label="View shop">
             <ExternalLink className="size-4.5" />
           </Link>

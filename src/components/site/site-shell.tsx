@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InstallBanner, InstallLink } from "@/components/install-app";
 import { ActiveOrderBar } from "@/components/site/active-order-bar";
 import { CategoryIcon } from "@/components/site/category-icons";
 import { Logo } from "@/components/site/logo";
@@ -95,6 +96,7 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
           </Link>
         </div>
       )}
+      {!admin && <InstallBanner appName="Karthika Chicken" />}
       {settings.starterCatalogue && (
         <p className="bg-charcoal px-4 py-1.5 text-center text-[11px] text-white/85 sm:text-xs">
           Setup menu — prices and stock are starter figures until the shop publishes its own list.
@@ -688,6 +690,10 @@ function Footer() {
           <p className="mt-1 text-sm">by {settings.name}</p>
           <p className="mt-3 text-sm leading-6">Fresh chicken, cut to order and delivered in the slot you choose.</p>
           {settings.hours && <p className="mt-3 text-sm">Open {settings.hours}</p>}
+          <InstallLink
+            appName="Karthika Chicken"
+            className="mt-4 rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+          />
         </div>
         <FooterList
           title="Shop"

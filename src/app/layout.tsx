@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     template: "%s | Karthika Chicken Centre",
   },
   description: "Freshly prepared chicken, packed with care and delivered to your doorstep.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Karthika Chicken", statusBarStyle: "default" },
+  icons: { apple: "/icon-192.png" },
   openGraph: {
     siteName: "Karthika Chicken Centre",
     type: "website",
@@ -36,6 +39,8 @@ export const metadata: Metadata = {
     description: "Freshly prepared chicken, packed with care and delivered to your doorstep.",
   },
 };
+
+export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
