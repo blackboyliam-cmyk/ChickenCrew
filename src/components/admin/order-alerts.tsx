@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { PUSH_OFF_KEY, enablePushAlerts } from "@/components/admin/phone-alerts";
 import { api } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
 
@@ -24,6 +25,7 @@ export function OrderAlerts() {
   const soundOn = useRef(true);
   const audio = useRef<AudioContext | null>(null);
   const seen = useRef<Set<string> | null>(null);
+  const pushOn = useRef(false);
 
   const unlockAudio = useCallback(() => {
     try {
@@ -51,6 +53,15 @@ export function OrderAlerts() {
       osc.start(at);
       osc.stop(at + 0.55);
     });
+  }, []);
+
+  useEffect(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted" || localStorage.getItem(PUSH_OFF_KEY)) return;
+    enablePushAlerts()
+      .then((result) => {
+        pushOn.current = result === "on";
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -87,7 +98,7 @@ export function OrderAlerts() {
                 action: { label: "View", onClick: () => router.push(`/admin/orders?open=${order.id}`) },
               });
             }
-            if (document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") {
+            if (!pushOn.current && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") {
               new Notification(fresh.length === 1 ? `New order #${fresh[0].number}` : `${fresh.length} new orders`, {
                 body: fresh.map((order) => `${order.name} · ${formatINR(order.total)}`).join("\n"),
                 tag: "cc-new-order",
@@ -116,8 +127,14 @@ export function OrderAlerts() {
     if (next) {
       unlockAudio();
       setTimeout(chime, 50);
-      if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
-      toast.success("You'll hear a chime for new orders. Keep this tab open.");
+      void enablePushAlerts()
+        .then((result) => {
+          pushOn.current = result === "on";
+          if (result === "on") toast.success("Alerts are on. Your phone will ring for new orders even when this site is closed.");
+          else if (result === "denied") toast.error("Notifications are blocked. Allow them for this site in your phone's settings.");
+          else toast("You'll hear a chime while this page is open. On iPhone, add the shop to your Home Screen for alerts when it's closed.");
+        })
+        .catch(() => toast("You'll hear a chime while this page is open."));
     }
   }
 

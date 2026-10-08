@@ -25,6 +25,27 @@ function deviceName() {
   return "This device";
 }
 
+export const PUSH_OFF_KEY = "cc-push-off";
+
+export type EnableResult = "on" | "denied" | "unsupported" | "not-configured";
+
+/** Signs this device up for push alerts, which ring even when the site is closed. */
+export async function enablePushAlerts(publicKey?: string): Promise<EnableResult> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "unsupported";
+  const key = publicKey ?? (await api<Status>("/api/admin/push")).publicKey;
+  if (!key) return "not-configured";
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return "denied";
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  await navigator.serviceWorker.ready;
+  const sub =
+    (await reg.pushManager.getSubscription()) ||
+    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) }));
+  await api("/api/admin/push", { body: { ...sub.toJSON(), device: deviceName() } });
+  localStorage.removeItem(PUSH_OFF_KEY);
+  return "on";
+}
+
 export function PhoneAlerts() {
   const [status, setStatus] = useState<Status | null>(null);
   const [support, setSupport] = useState<Support>("checking");
@@ -59,18 +80,13 @@ export function PhoneAlerts() {
     if (!status?.publicKey) return;
     setBusy(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
+      const result = await enablePushAlerts(status.publicKey);
+      if (result === "denied") {
         toast.error("Notifications are blocked. Allow them for this site in your phone's settings, then try again.");
         return;
       }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const sub =
-        (await reg.pushManager.getSubscription()) ||
-        (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(status.publicKey) }));
-      await api("/api/admin/push", { body: { ...sub.toJSON(), device: deviceName() } });
-      setEndpoint(sub.endpoint);
+      const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+      setEndpoint(sub?.endpoint ?? null);
       await refresh();
       toast.success("Order alerts are on for this device.");
     } catch (err) {
@@ -102,6 +118,7 @@ export function PhoneAlerts() {
       const sub = await reg?.pushManager.getSubscription();
       await sub?.unsubscribe();
       await api("/api/admin/push", { method: "DELETE", body: { endpoint } });
+      localStorage.setItem(PUSH_OFF_KEY, "1");
       setEndpoint(null);
       await refresh();
       toast.success("Order alerts are off for this device.");
