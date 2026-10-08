@@ -88,7 +88,6 @@ export function AdminSidebar() {
       <div className="space-y-0.5 border-t border-white/10 pt-3">
         <Link
           href="/"
-          target="_blank"
           className="flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-white/65 hover:bg-white/6 hover:text-white"
         >
           <ExternalLink className="size-4.5" /> View shop
@@ -113,7 +112,7 @@ export function AdminTopbar() {
       <div className="flex h-14 items-center justify-between px-4">
         <Brand />
         <div className="flex items-center gap-1">
-          <Link href="/" target="_blank" className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10" aria-label="View shop">
+          <Link href="/" className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10" aria-label="View shop">
             <ExternalLink className="size-4.5" />
           </Link>
           <button

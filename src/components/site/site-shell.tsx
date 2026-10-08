@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
   ChevronDown,
   ClipboardList,
@@ -57,15 +58,23 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteShell({ settings, children }: { settings: PublicSettings; children: React.ReactNode }) {
+export function SiteShell({
+  settings,
+  admin = false,
+  children,
+}: {
+  settings: PublicSettings;
+  admin?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <ShopProvider settings={settings}>
-      <ShellInner>{children}</ShellInner>
+      <ShellInner admin={admin}>{children}</ShellInner>
     </ShopProvider>
   );
 }
 
-function ShellInner({ children }: { children: React.ReactNode }) {
+function ShellInner({ admin, children }: { admin: boolean; children: React.ReactNode }) {
   const { settings, offline } = useShop();
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip">
@@ -75,6 +84,17 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
+      {admin && (
+        <div className="flex items-center justify-between gap-3 bg-charcoal px-4 py-2 text-xs text-white/85 sm:text-sm">
+          <span className="min-w-0 truncate">You&apos;re viewing the shop as admin</span>
+          <Link
+            href="/admin"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1 font-bold text-charcoal hover:bg-white/90"
+          >
+            <ArrowLeft className="size-3.5" /> Back to admin
+          </Link>
+        </div>
+      )}
       {settings.starterCatalogue && (
         <p className="bg-charcoal px-4 py-1.5 text-center text-[11px] text-white/85 sm:text-xs">
           Setup menu — prices and stock are starter figures until the shop publishes its own list.
