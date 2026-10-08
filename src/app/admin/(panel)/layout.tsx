@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminSidebar, AdminTopbar } from "@/components/admin/admin-nav";
 import { OrderAlerts } from "@/components/admin/order-alerts";
 import { isAdmin } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  manifest: "/admin.webmanifest",
+  appleWebApp: { capable: true, title: "KCC Admin", statusBarStyle: "default" },
+  icons: { apple: "/icon-192.png" },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   if (!(await isAdmin())) redirect("/admin/login");

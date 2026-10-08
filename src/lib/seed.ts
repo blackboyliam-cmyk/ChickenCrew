@@ -322,6 +322,7 @@ export function createSeed(): DB {
     bookings: [],
     payments: [],
     riders: [],
+    pushSubscriptions: [],
   };
 }
 

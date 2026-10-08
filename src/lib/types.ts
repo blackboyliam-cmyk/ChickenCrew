@@ -280,6 +280,15 @@ export type PaymentRecord = {
   createdAt: string;
 };
 
+/** A phone or browser that turned on order alerts in the admin. */
+export type PushSubscriptionRecord = {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  device: string;
+  createdAt: string;
+};
+
 export type DB = {
   schemaVersion: number;
   settings: ShopSettings;
@@ -298,6 +307,7 @@ export type DB = {
   bookings: Booking[];
   payments: PaymentRecord[];
   riders: Rider[];
+  pushSubscriptions: PushSubscriptionRecord[];
 };
 
 export type ProductCardData = {

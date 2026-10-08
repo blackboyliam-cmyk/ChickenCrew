@@ -1,6 +1,6 @@
 import { isAdmin } from "@/lib/auth";
 import { ApiError } from "@/lib/errors";
-import { handle, readJson } from "@/lib/http";
+import { handle, rateLimit, readJson } from "@/lib/http";
 import {
   adminDeleteOffer,
   adminDeleteProduct,
@@ -27,7 +27,10 @@ export const PUT = handle(async (req, ctx) => {
   if (resource === "offers") return { offer: adminSaveOffer(body, id) };
   if (resource === "coupons") return { coupon: adminSaveCoupon(body, id) };
   if (resource === "slots") return { slot: adminSaveSlot(body, id) };
-  if (resource === "orders") return { order: adminUpdateOrder(id, body) };
+  if (resource === "orders") {
+    if (body.status === "delivered") rateLimit(`admin-code:${id}`, 8, 10 * 60 * 1000);
+    return { order: adminUpdateOrder(id, body) };
+  }
   if (resource === "riders") return body.action === "settle" ? adminSettleRider(id) : { rider: adminSaveRider(body, id) };
   throw new ApiError(404, "Not found.");
 });

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2, Circle, ClipboardList, IndianRupee, PackageX, Users } from "lucide-react";
 import { AdminHeader, Badge, ErrorBanner, Panel, errorText } from "@/components/admin/forms";
 import { OPEN_STATUSES, STATUS, kolkataDay, orderTime } from "@/components/admin/order-status";
+import { PhoneAlerts } from "@/components/admin/phone-alerts";
 import { api } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
 import type { OrderStatus, Product, ShopSettings, SlotTemplate } from "@/lib/types";
@@ -150,6 +151,8 @@ export default function AdminHome() {
         </Panel>
 
         <div className="space-y-6">
+          <PhoneAlerts />
+
           {settings && pending > 0 && (
             <Panel title="Before you go live" description={`${checklist.length - pending} of ${checklist.length} done`}>
               <ul className="space-y-2.5">

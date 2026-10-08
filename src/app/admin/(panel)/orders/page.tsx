@@ -141,9 +141,15 @@ function OrdersView() {
   async function setStatus(order: Row, status: OrderStatus) {
     if (status === order.status) return;
     if (status === "cancelled" && !window.confirm(`Cancel order #${order.number}? Stock goes back on the shelf.`)) return;
+    let code: string | undefined;
+    if (status === "delivered" && order.deliveryCode) {
+      const entered = window.prompt(`Enter the 4-digit delivery PIN from the customer for order #${order.number}.`);
+      if (entered === null) return;
+      code = entered.replace(/\D/g, "");
+    }
     setBusy(order.id);
     await attempt(
-      () => saveAdmin(`/api/admin/orders/${order.id}`, { status }, "PUT"),
+      () => saveAdmin(`/api/admin/orders/${order.id}`, { status, ...(code !== undefined ? { code } : {}) }, "PUT"),
       `#${order.number} is now ${STATUS[status].label.toLowerCase()}`,
     );
     await reload();

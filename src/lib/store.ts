@@ -6,6 +6,7 @@ import { loadSnapshot, saveEvents, saveSnapshot, usingMongo } from "./db-backend
 import { ApiError } from "./errors";
 import { optimizeImage } from "./images";
 import { hashPin, verifyPin } from "./pin";
+import { pushConfigured, pushPublicKey, sendPush, type PushMessage } from "./push";
 import { formatINR, rupeesToPaise } from "./money";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
 import { parseGrams } from "./weights";
@@ -99,6 +100,36 @@ export function afterSave(task: () => Promise<void>) {
   currentScope().afterSave.push(task);
 }
 
+/** Alerts the shop's phones once the change is saved; a failed push never fails the order. */
+function notifyShop(db: DB, message: PushMessage) {
+  const subscriptions = db.pushSubscriptions.slice();
+  if (!subscriptions.length || !pushConfigured()) return;
+  afterSave(async () => {
+    try {
+      const gone = await sendPush(subscriptions, message);
+      if (gone.length) {
+        await withDb(() =>
+          update((next) => {
+            next.pushSubscriptions = next.pushSubscriptions.filter((sub) => !gone.includes(sub.endpoint));
+          }),
+        );
+      }
+    } catch (error) {
+      console.error("Order alert failed", error);
+    }
+  });
+}
+
+function newOrderAlert(db: DB, order: Order) {
+  const items = order.items.map((item) => `${item.name} ${item.weight} ×${item.qty}`).join(", ");
+  notifyShop(db, {
+    title: `New order #${order.number} · ${formatINR(order.total)}`,
+    body: `${order.address.name} · ${order.paymentMethod === "cod" ? "Cash on delivery" : "Paid online"} · ${order.slot.label}\n${items}`,
+    url: `/admin/orders?open=${order.id}`,
+    tag: `order-${order.id}`,
+  });
+}
+
 function currentScope(): RequestDb {
   const scope = requestDb.getStore();
   if (!scope) throw new Error("Shop data was used outside withDb().");
@@ -111,6 +142,7 @@ function normalizeDb(db: DB): DB {
   db.payments ||= [];
   db.analytics ||= [];
   db.riders ||= [];
+  db.pushSubscriptions ||= [];
   db.settings.gstin ??= "";
   db.settings.fssai ??= "";
   db.otps = (db.otps || [])
@@ -1101,6 +1133,7 @@ export function createOrder(input: CheckoutInput): Order {
     holdInventory(db, order);
     db.orders.push(order);
     cart.items = [];
+    if (order.status === "placed") newOrderAlert(db, order);
     return order;
   });
 }
@@ -1298,10 +1331,12 @@ export function markOrderPaid(razorpayOrderId: string, razorpayPaymentId: string
     if (order.status === "cancelled") throw new ApiError(409, "This payment is for a cancelled order.");
     order.paymentStatus = "paid";
     order.razorpayPaymentId = razorpayPaymentId;
-    if (order.status === "pending_payment") order.status = "placed";
+    const justPlaced = order.status === "pending_payment";
+    if (justPlaced) order.status = "placed";
     order.updatedAt = new Date().toISOString();
     const payment = db.payments.find((item) => item.razorpayOrderId === razorpayOrderId);
     if (payment) payment.status = "paid";
+    if (justPlaced) newOrderAlert(db, order);
     return publicOrder(order);
   });
 }
@@ -1607,7 +1642,7 @@ const STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
-export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?: unknown }) {
+export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?: unknown; code?: unknown }) {
   const status = input.status == null || input.status === "" ? null : String(input.status);
   if (status && !STATUSES.includes(status as OrderStatus)) throw new ApiError(400, "Unknown status.");
   return update((db) => {
@@ -1634,6 +1669,9 @@ export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?
       }
       if (next === "out_for_delivery") order.outForDeliveryAt ||= now;
       if (next === "delivered") {
+        if (order.deliveryCode && String(input.code ?? "").trim() !== order.deliveryCode) {
+          throw new ApiError(400, "Enter the customer's 4-digit delivery PIN to mark this order delivered.");
+        }
         order.deliveredAt = now;
         if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
           order.paymentStatus = "paid";
@@ -1651,6 +1689,51 @@ export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?
     order.updatedAt = now;
     return publicOrder(order);
   });
+}
+
+export function adminPushStatus() {
+  return { configured: pushConfigured(), publicKey: pushPublicKey(), devices: readDb().pushSubscriptions.length };
+}
+
+export function adminPushSubscribe(input: Record<string, unknown>) {
+  const endpoint = String(input.endpoint || "");
+  const keys = (input.keys || {}) as Record<string, unknown>;
+  const p256dh = String(keys.p256dh || "");
+  const auth = String(keys.auth || "");
+  if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !p256dh || !auth || p256dh.length > 200 || auth.length > 100) {
+    throw new ApiError(400, "This browser sent an invalid alert subscription.");
+  }
+  const device = cleanText(input.device, 80) || "Phone";
+  return update((db) => {
+    db.pushSubscriptions = db.pushSubscriptions.filter((sub) => sub.endpoint !== endpoint);
+    if (db.pushSubscriptions.length >= 20) throw new ApiError(400, "Too many devices have alerts on. Turn some off first.");
+    db.pushSubscriptions.push({ endpoint, p256dh, auth, device, createdAt: new Date().toISOString() });
+    return { devices: db.pushSubscriptions.length };
+  });
+}
+
+export function adminPushUnsubscribe(endpoint: string) {
+  return update((db) => {
+    db.pushSubscriptions = db.pushSubscriptions.filter((sub) => sub.endpoint !== endpoint);
+    return { devices: db.pushSubscriptions.length };
+  });
+}
+
+export async function adminPushTest(endpoint: string) {
+  if (!pushConfigured()) throw new ApiError(503, "Phone alerts are not set up on the server yet.");
+  const sub = readDb().pushSubscriptions.find((item) => item.endpoint === endpoint);
+  if (!sub) throw new ApiError(404, "Alerts are not turned on for this device.");
+  const gone = await sendPush([sub], {
+    title: "Order alerts are working",
+    body: "You'll get a notification like this for every new order.",
+    url: "/admin/orders",
+    tag: "test-alert",
+  });
+  if (gone.length) {
+    adminPushUnsubscribe(endpoint);
+    throw new ApiError(410, "This phone's alert subscription expired. Turn alerts on again.");
+  }
+  return { ok: true };
 }
 
 /** Newly placed orders, for the admin's new-order alert. */
@@ -1819,6 +1902,16 @@ export function riderUpdateOrder(riderId: string, orderId: string, input: Record
       }
       order.status = "delivered";
       order.deliveredAt = now;
+      const rider = db.riders.find((item) => item.id === riderId);
+      const paid = order.collection
+        ? `${formatINR(order.collection.amount)} collected by ${order.collection.mode === "upi" ? "UPI" : "cash"}`
+        : "Paid online";
+      notifyShop(db, {
+        title: `Delivered #${order.number}${order.deliveryCode ? " · PIN verified" : ""}`,
+        body: `${rider?.name || "Rider"} delivered to ${order.address.name}. ${paid}.`,
+        url: `/admin/orders?open=${order.id}`,
+        tag: `order-${order.id}`,
+      });
     } else {
       throw new ApiError(400, "Unknown action.");
     }
