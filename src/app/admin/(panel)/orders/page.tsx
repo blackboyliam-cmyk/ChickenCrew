@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Bike, ChevronDown, ClipboardList, FileText, MapPin, MessageCircle, Phone, Printer, RefreshCw } from "lucide-react";
+import { Bike, ChevronDown, ClipboardList, FileText, MapPin, MessageCircle, Phone, Printer, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import {
@@ -156,6 +157,41 @@ function OrdersView() {
     setBusy(null);
   }
 
+  async function remove(order: Row) {
+    if (!window.confirm(`Delete order #${order.number}? It will be removed for good, including from the customer's order history.`)) return;
+    setBusy(order.id);
+    const ok = await attempt(() => saveAdmin(`/api/admin/orders/${order.id}`, {}, "DELETE"), `Order #${order.number} deleted`);
+    if (ok) setOpenId(null);
+    await reload();
+    setBusy(null);
+  }
+
+  async function removeAllDelivered() {
+    const delivered = (data?.orders ?? []).filter((order) => order.status === "delivered");
+    const ready = delivered.filter((order) => !order.collection || order.collection.settledAt);
+    if (!ready.length) {
+      toast.error("No delivered orders can be deleted yet. Settle riders' cash first.");
+      return;
+    }
+    const skipped = delivered.length - ready.length;
+    const note = skipped ? `\n\n${skipped} order${skipped === 1 ? "" : "s"} with cash the rider hasn't handed over will be kept.` : "";
+    if (!window.confirm(`Delete ${ready.length} delivered order${ready.length === 1 ? "" : "s"}? This can't be undone.${note}`)) return;
+    setBusy("all");
+    let failed = 0;
+    for (const order of ready) {
+      try {
+        await saveAdmin(`/api/admin/orders/${order.id}`, {}, "DELETE");
+      } catch {
+        failed += 1;
+      }
+    }
+    if (failed) toast.error(`${failed} order${failed === 1 ? "" : "s"} couldn't be deleted. Try again.`);
+    else toast.success(`Deleted ${ready.length} delivered order${ready.length === 1 ? "" : "s"}`);
+    setOpenId(null);
+    await reload();
+    setBusy(null);
+  }
+
   async function assign(order: Row, riderId: string | null) {
     setBusy(order.id);
     const name = riders.find((rider) => rider.id === riderId)?.name;
@@ -197,7 +233,19 @@ function OrdersView() {
             </button>
           ))}
         </div>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search number, name or phone" />
+        <div className="flex flex-wrap items-center gap-2">
+          {tab === "delivered" && counts.delivered > 0 && (
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl text-destructive hover:text-destructive"
+              disabled={busy !== null}
+              onClick={() => void removeAllDelivered()}
+            >
+              <Trash2 className="size-4" /> Delete all
+            </Button>
+          )}
+          <SearchInput value={query} onChange={setQuery} placeholder="Search number, name or phone" />
+        </div>
       </div>
 
       <Panel bodyClassName="p-0">
@@ -301,6 +349,18 @@ function OrdersView() {
                               <Printer className="size-3.5" /> Receipt
                             </Link>
                           </Button>
+                          {order.status === "delivered" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg text-destructive hover:text-destructive"
+                              disabled={busy === order.id || (order.collection !== null && !order.collection.settledAt)}
+                              title={order.collection && !order.collection.settledAt ? "Settle the rider's cash first" : undefined}
+                              onClick={() => void remove(order)}
+                            >
+                              <Trash2 className="size-3.5" /> Delete order
+                            </Button>
+                          )}
                         </div>
                       </div>
 

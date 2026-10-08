@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/errors";
 import { handle, rateLimit, readJson } from "@/lib/http";
 import {
   adminDeleteOffer,
+  adminDeleteOrder,
   adminDeleteProduct,
   adminSaveCategory,
   adminSaveCoupon,
@@ -40,5 +41,6 @@ export const DELETE = handle(async (_req, ctx) => {
   const { resource, id } = await ctx.params;
   if (resource === "products") return adminDeleteProduct(id);
   if (resource === "offers") return adminDeleteOffer(id);
+  if (resource === "orders") return adminDeleteOrder(id);
   throw new ApiError(404, "Not found.");
 });
