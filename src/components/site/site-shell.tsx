@@ -97,11 +97,6 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
         </div>
       )}
       {!admin && <InstallBanner appName="Karthika Chicken" />}
-      {settings.starterCatalogue && (
-        <p className="bg-charcoal px-4 py-1.5 text-center text-[11px] text-white/85 sm:text-xs">
-          Setup menu — prices and stock are starter figures until the shop publishes its own list.
-        </p>
-      )}
       <Header />
       {offline && (
         <p className="bg-charcoal px-4 py-2 text-center text-sm text-white" role="status">

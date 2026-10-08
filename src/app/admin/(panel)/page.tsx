@@ -79,9 +79,7 @@ export default function AdminHome() {
         { done: Boolean(settings.addressLine && settings.city), label: "Add the shop address", href: "/admin/settings" },
         { done: settings.servicePincodes.length > 0, label: "List the pincodes you deliver to", href: "/admin/settings" },
         { done: Boolean(data?.slots.some((slot) => slot.active)), label: "Open at least one delivery slot", href: "/admin/slots" },
-        { done: settings.codEnabled || settings.onlinePaymentEnabled, label: "Turn on a payment method", href: "/admin/settings" },
-        { done: !settings.starterCatalogue, label: "Set your real prices, then hide the starter banner", href: "/admin/products" },
-      ]
+        { done: settings.codEnabled || settings.onlinePaymentEnabled, label: "Turn on a payment method", href: "/admin/settings" },      ]
     : [];
   const pending = checklist.filter((item) => !item.done).length;
 

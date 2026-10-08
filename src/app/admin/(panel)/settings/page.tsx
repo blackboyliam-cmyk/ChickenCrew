@@ -134,14 +134,6 @@ export default function SettingsAdmin() {
           <Field label="About the shop" area className="sm:col-span-2" value={form.about} onChange={set("about")} hint="Shown on the About page and in the footer." />
           <Field label="GSTIN" value={form.gstin} onChange={(value) => set("gstin")(value.toUpperCase())} placeholder="32ABCDE1234F1Z5" hint="Optional. Printed on bills." />
           <Field label="FSSAI licence number" inputMode="numeric" value={form.fssai} onChange={set("fssai")} placeholder="14 digits" hint="Printed on bills. Food businesses must show it." />
-          <div className="sm:col-span-2">
-            <Toggle
-              checked={form.starterCatalogue}
-              onChange={set("starterCatalogue")}
-              label="Show the starter catalogue notice"
-              description="Turn this off once your real products and prices are in."
-            />
-          </div>
         </Panel>
 
         <Panel id="contact" title="Contact" description="Shown in the header, footer and Contact page." bodyClassName="grid gap-4 sm:grid-cols-2">
