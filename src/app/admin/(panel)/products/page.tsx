@@ -155,7 +155,14 @@ export default function ProductsAdmin() {
   const setPerKg = (perKg: string) =>
     setDraft((current) =>
       current
-        ? { ...current, perKg, variants: current.variants.map((v) => ({ ...v, price: priceFor(perKg, v.label) ?? v.price })) }
+        ? {
+            ...current,
+            perKg,
+            variants: current.variants.map((v) => {
+              const price = priceFor(perKg, v.label);
+              return price === null ? v : { ...v, price, mrp: "" };
+            }),
+          }
         : current,
     );
   const setWeight = (index: number, label: string) =>
@@ -163,7 +170,11 @@ export default function ProductsAdmin() {
       current
         ? {
             ...current,
-            variants: current.variants.map((v, i) => (i === index ? { ...v, label, price: priceFor(current.perKg, label) ?? v.price } : v)),
+            variants: current.variants.map((v, i) => {
+              if (i !== index) return v;
+              const price = priceFor(current.perKg, label);
+              return price === null ? { ...v, label } : { ...v, label, price, mrp: "" };
+            }),
           }
         : current,
     );
@@ -329,7 +340,7 @@ export default function ProductsAdmin() {
                     value={draft.perKg}
                     onChange={setPerKg}
                     placeholder="180"
-                    hint="Fills the price for every weight below. You can still change any weight by hand."
+                    hint="Fills the price for every weight below and clears old MRPs. Add an MRP afterwards only if you want to show a discount."
                     className="mt-3"
                   />
                   <div className="mt-3 space-y-2.5">
