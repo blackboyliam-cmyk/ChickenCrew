@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Crosshair, Loader2, MapPin, Search, X } from "lucide-react";
-import { MAPS_KEY, addressFromComponents, mapsLibs, onMapsAuthFailure, type AddressParts, type LatLng } from "@/lib/maps";
+import { MAPS_KEY, addressFromComponents, isBuildingPlace, mapsLibs, onMapsAuthFailure, type AddressParts, type LatLng } from "@/lib/maps";
 import { cn } from "@/lib/utils";
 
 type Suggestion = { id: string; main: string; secondary: string; prediction: google.maps.places.PlacePrediction };
@@ -212,12 +212,16 @@ function GoogleMapPicker({
     setQuery(suggestion.main);
     const result = suggestion.prediction.toPlace();
     token.current = null;
-    const { place: found } = await result.fetchFields({ fields: ["location", "addressComponents"] }).catch(() => ({ place: null }));
+    const { place: found } = await result
+      .fetchFields({ fields: ["location", "addressComponents", "displayName", "types"] })
+      .catch(() => ({ place: null }));
     const at = found?.location;
     if (!at) return;
     place({ lat: at.lat(), lng: at.lng() }, { geocode: false, zoom: true });
     if (found.addressComponents) {
-      callbacks.current.onAddress?.(addressFromComponents(found.addressComponents.map((c) => ({ types: c.types, long: c.longText || "" }))));
+      const parts = addressFromComponents(found.addressComponents.map((c) => ({ types: c.types, long: c.longText || "" })));
+      if (isBuildingPlace(found.types || [])) parts.building = found.displayName || suggestion.main;
+      callbacks.current.onAddress?.(parts);
     }
   }
 

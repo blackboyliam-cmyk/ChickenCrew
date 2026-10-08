@@ -2,7 +2,30 @@ export const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 export type LatLng = { lat: number; lng: number };
 
-export type AddressParts = { street: string; area: string; city: string; state: string; pincode: string };
+export type AddressParts = { building?: string; street: string; area: string; city: string; state: string; pincode: string };
+
+const NOT_A_BUILDING = new Set([
+  "route",
+  "street_address",
+  "locality",
+  "sublocality",
+  "sublocality_level_1",
+  "sublocality_level_2",
+  "sublocality_level_3",
+  "neighborhood",
+  "postal_code",
+  "administrative_area_level_1",
+  "administrative_area_level_2",
+  "administrative_area_level_3",
+  "country",
+  "political",
+  "geocode",
+]);
+
+/** A picked place is a building, society or shop when Google tags it as more than a road or area. */
+export function isBuildingPlace(types: string[]) {
+  return types.some((type) => !NOT_A_BUILDING.has(type));
+}
 
 declare global {
   interface Window {
@@ -71,6 +94,7 @@ export function addressFromComponents(components: Component[]): AddressParts {
     return "";
   };
   return {
+    building: get("premise", "subpremise"),
     street: get("route", "sublocality_level_2", "sublocality_level_3"),
     area: get("sublocality_level_1", "sublocality", "neighborhood", "sublocality_level_2"),
     city: get("locality", "administrative_area_level_3", "administrative_area_level_2"),
