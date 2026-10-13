@@ -22,7 +22,6 @@ type RiderOrder = {
   total: number;
   paymentMethod: "cod" | "razorpay";
   due: number;
-  needsCode: boolean;
   deliveredAt: string | null;
   collection: Collection | null;
 };
@@ -298,20 +297,19 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
   const { t, tError } = useRiderLang();
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
-  const [code, setCode] = useState("");
   const [mode, setMode] = useState<"cash" | "upi" | null>(null);
   const [error, setError] = useState("");
   const onTheWay = order.status === "out_for_delivery";
   const address = order.address;
   const pinned = address.lat != null && address.lng != null;
   const destination = pinned ? { lat: address.lat!, lng: address.lng! } : addressText(address);
-  const canFinish = (!order.needsCode || code.length === 4) && (order.due === 0 || mode !== null);
+  const canFinish = order.due === 0 || mode !== null;
 
   async function act(action: "start" | "deliver") {
     setBusy(true);
     setError("");
     try {
-      await api(`/api/rider/orders/${order.id}`, { method: "POST", body: { action, code, mode } });
+      await api(`/api/rider/orders/${order.id}`, { method: "POST", body: { action, mode } });
       toast.success(action === "start" ? t("started") : t("delivered", { number: order.number }));
       setFinishing(false);
       await onChange();
@@ -387,23 +385,6 @@ function DeliveryCard({ order, onChange }: { order: RiderOrder; onChange: () => 
 
       {finishing && (
         <div className="space-y-3 border-t bg-muted/40 p-4">
-          {order.needsCode && (
-            <label className="block">
-              <span className="text-[13px] font-semibold">{t("codeLabel")}</span>
-              <input
-                inputMode="numeric"
-                autoFocus
-                maxLength={4}
-                value={code}
-                onChange={(event) => {
-                  setCode(event.target.value.replace(/\D/g, "").slice(0, 4));
-                  setError("");
-                }}
-                className="mt-1.5 h-14 w-full rounded-xl border bg-white text-center font-mono text-2xl font-black tracking-[0.5em] outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
-                placeholder="••••"
-              />
-            </label>
-          )}
           {order.due > 0 && (
             <fieldset>
               <legend className="text-[13px] font-semibold">{t("howPaid", { amount: formatINR(order.due) })}</legend>

@@ -156,7 +156,7 @@ export function PhoneAlerts() {
               <BellRing className={`mt-0.5 size-4 shrink-0 ${on ? "text-emerald-600" : "text-muted-foreground"}`} />
               <span>
                 {on
-                  ? "Alerts are on. You'll be notified of new orders and when a rider delivers with the customer's PIN, even when this site is closed."
+                  ? "Alerts are on. You'll be notified of new orders and when a rider delivers, even when this site is closed."
                   : "Turn this on with the phone you keep at the shop. You'll be notified even when this site is closed."}
               </span>
             </p>

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { AsyncLocalStorage } from "async_hooks";
-import { randomInt, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import { loadSnapshot, saveEvents, saveSnapshot, usingMongo } from "./db-backend";
 import { ApiError } from "./errors";
 import { optimizeImage } from "./images";
@@ -1125,7 +1125,6 @@ export function createOrder(input: CheckoutInput): Order {
       couponHeld: Boolean(couponCode),
       idempotencyKey: input.idempotencyKey,
       riderId: null,
-      deliveryCode: String(randomInt(1000, 10000)),
       collection: null,
       createdAt: now,
       updatedAt: now,
@@ -1238,7 +1237,6 @@ export function publicOrder(order: Order) {
     createdAt: order.createdAt,
     razorpayOrderId: order.razorpayOrderId || null,
     riderId: order.riderId || null,
-    deliveryCode: order.deliveryCode || null,
     outForDeliveryAt: order.outForDeliveryAt || null,
     deliveredAt: order.deliveredAt || null,
     collection: order.collection || null,
@@ -1656,7 +1654,7 @@ const STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
-export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?: unknown; code?: unknown }) {
+export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?: unknown }) {
   const status = input.status == null || input.status === "" ? null : String(input.status);
   if (status && !STATUSES.includes(status as OrderStatus)) throw new ApiError(400, "Unknown status.");
   return update((db) => {
@@ -1683,9 +1681,6 @@ export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?
       }
       if (next === "out_for_delivery") order.outForDeliveryAt ||= now;
       if (next === "delivered") {
-        if (order.deliveryCode && String(input.code ?? "").trim() !== order.deliveryCode) {
-          throw new ApiError(400, "Enter the customer's 4-digit delivery PIN to mark this order delivered.");
-        }
         order.deliveredAt = now;
         if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
           order.paymentStatus = "paid";
@@ -1869,7 +1864,6 @@ function riderOrder(order: Order) {
     total: order.total,
     paymentMethod: order.paymentMethod,
     due,
-    needsCode: Boolean(order.deliveryCode),
     deliveredAt: order.deliveredAt || null,
     collection: order.collection || null,
   };
@@ -1905,9 +1899,6 @@ export function riderUpdateOrder(riderId: string, orderId: string, input: Record
       order.outForDeliveryAt = now;
     } else if (input.action === "deliver") {
       if (order.status !== "out_for_delivery") throw new ApiError(400, "Start the delivery first.");
-      if (order.deliveryCode && String(input.code || "").trim() !== order.deliveryCode) {
-        throw new ApiError(400, "That delivery code is wrong. Ask the customer to check their order page.");
-      }
       if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
         const mode = input.mode === "upi" ? "upi" : input.mode === "cash" ? "cash" : null;
         if (!mode) throw new ApiError(400, "Choose how the customer paid.");
@@ -1921,7 +1912,7 @@ export function riderUpdateOrder(riderId: string, orderId: string, input: Record
         ? `${formatINR(order.collection.amount)} collected by ${order.collection.mode === "upi" ? "UPI" : "cash"}`
         : "Paid online";
       notifyShop(db, {
-        title: `Delivered #${order.number}${order.deliveryCode ? " · PIN verified" : ""}`,
+        title: `Delivered #${order.number}`,
         body: `${rider?.name || "Rider"} delivered to ${order.address.name}. ${paid}.`,
         url: `/admin/orders?open=${order.id}`,
         tag: `order-${order.id}`,

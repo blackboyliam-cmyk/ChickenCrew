@@ -17,7 +17,7 @@ function ago(iso: string) {
 }
 
 /** Live rider position for an order that is out for delivery. Polls every 10 seconds. */
-export function OrderTracking({ orderId, code }: { orderId: string; code: string | null }) {
+export function OrderTracking({ orderId }: { orderId: string }) {
   const [tracking, setTracking] = useState<Tracking | null>(null);
 
   useEffect(() => {
@@ -88,15 +88,6 @@ export function OrderTracking({ orderId, code }: { orderId: string; code: string
         />
       )}
 
-      {code && (
-        <div className="m-5 flex items-center justify-between gap-4 rounded-2xl bg-charcoal px-5 py-4 text-white">
-          <div>
-            <p className="text-sm font-bold">Delivery code</p>
-            <p className="text-xs text-white/65">Tell this to the rider when your order arrives.</p>
-          </div>
-          <p className="font-mono text-3xl font-black tracking-[0.25em]">{code}</p>
-        </div>
-      )}
     </section>
   );
 }

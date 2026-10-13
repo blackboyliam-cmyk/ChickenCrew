@@ -43,7 +43,6 @@ type Row = {
   address: Omit<Address, "id" | "userId">;
   slot: { date: string; label: string };
   riderId: string | null;
-  deliveryCode: string | null;
   collection: Collection | null;
 };
 
@@ -75,9 +74,7 @@ function customerMessage(order: Row, origin: string) {
     case "ready":
       return `Hi ${first}, we're packing your ChickenCrew order #${order.number} now. Track it here: ${track}`;
     case "out_for_delivery":
-      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Track the rider live: ${track}${
-        order.deliveryCode ? `\nPlease share code ${order.deliveryCode} with the rider at your door.` : ""
-      }`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Track the rider live: ${track}`;
     case "delivered":
       return `Hi ${first}, thanks for ordering from ChickenCrew! Your bill for order #${order.number}: ${origin}/bill/${order.id}`;
     default:
@@ -142,15 +139,9 @@ function OrdersView() {
   async function setStatus(order: Row, status: OrderStatus) {
     if (status === order.status) return;
     if (status === "cancelled" && !window.confirm(`Cancel order #${order.number}? Stock goes back on the shelf.`)) return;
-    let code: string | undefined;
-    if (status === "delivered" && order.deliveryCode) {
-      const entered = window.prompt(`Enter the 4-digit delivery PIN from the customer for order #${order.number}.`);
-      if (entered === null) return;
-      code = entered.replace(/\D/g, "");
-    }
     setBusy(order.id);
     await attempt(
-      () => saveAdmin(`/api/admin/orders/${order.id}`, { status, ...(code !== undefined ? { code } : {}) }, "PUT"),
+      () => saveAdmin(`/api/admin/orders/${order.id}`, { status }, "PUT"),
       `#${order.number} is now ${STATUS[status].label.toLowerCase()}`,
     );
     await reload();

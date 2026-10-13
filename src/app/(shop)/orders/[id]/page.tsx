@@ -276,22 +276,7 @@ export default function OrderPage() {
         )}
       </section>
 
-      {order.status === "out_for_delivery" ? (
-        <OrderTracking orderId={order.id} code={order.deliveryCode || null} />
-      ) : (
-        !cancelled &&
-        !pending &&
-        order.status !== "delivered" &&
-        order.deliveryCode && (
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-3xl border bg-card px-5 py-4">
-            <div>
-              <p className="text-sm font-bold">Delivery code</p>
-              <p className="text-xs text-muted-foreground">You&apos;ll tell this to the rider at your door.</p>
-            </div>
-            <p className="font-mono text-2xl font-black tracking-[0.25em]">{order.deliveryCode}</p>
-          </div>
-        )
-      )}
+      {order.status === "out_for_delivery" && <OrderTracking orderId={order.id} />}
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <section className="rounded-3xl border bg-card p-5">

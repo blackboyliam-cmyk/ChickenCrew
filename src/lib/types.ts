@@ -206,8 +206,6 @@ export type Order = {
   idempotencyKey?: string;
   cancelReason?: string;
   riderId?: string | null;
-  /** The customer reads this to the rider at the door. Older orders have none. */
-  deliveryCode?: string;
   outForDeliveryAt?: string;
   deliveredAt?: string;
   collection?: Collection | null;
