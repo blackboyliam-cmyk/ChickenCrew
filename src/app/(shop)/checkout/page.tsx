@@ -607,11 +607,13 @@ export default function CheckoutPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label={`Slots for ${activeGroup?.label || ""}`}>
+                  <div className="mt-4 space-y-2.5" role="radiogroup" aria-label={`Slots for ${activeGroup?.label || ""}`}>
                     {activeGroup?.slots.map((item) => {
                       const value = `${item.date}|${item.id}`;
                       const selected = slot === value;
                       const low = item.remaining > 0 && item.remaining <= 3;
+                      const status =
+                        item.remaining <= 0 ? "Full" : low ? `${item.remaining} left` : "Available";
                       return (
                         <button
                           key={value}
@@ -621,17 +623,44 @@ export default function CheckoutPage() {
                           disabled={item.remaining <= 0}
                           onClick={() => setSlot(value)}
                           className={cn(
-                            "flex min-h-14 flex-col items-start justify-center rounded-xl border px-3.5 py-2 text-left transition-colors duration-150",
+                            "flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left transition-colors duration-150",
                             selected
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-success/40 bg-success/[0.04] hover:border-success",
-                            "disabled:border-border disabled:bg-muted disabled:text-muted-foreground",
+                              ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                              : "bg-[#f7f0e8] hover:bg-[#f1e8de] active:bg-[#ebe1d5]",
+                            "disabled:bg-muted disabled:opacity-60",
                           )}
                         >
-                          <span className="text-sm font-semibold">{item.label}</span>
-                          <span className={cn("text-[11px]", selected ? "text-white/80" : low ? "text-warning" : "text-success")}>
-                            {item.remaining <= 0 ? "Full" : low ? `${item.remaining} left` : "Available"}
+                          <span
+                            className={cn(
+                              "inline-flex shrink-0 items-center rounded-full border px-3.5 py-2 text-[13px] font-bold tracking-tight sm:text-sm",
+                              selected
+                                ? "border-white/25 bg-white/15 text-primary-foreground"
+                                : "border-border/80 bg-card text-foreground",
+                            )}
+                          >
+                            {item.label}
                           </span>
+                          <span className="min-w-0 leading-tight">
+                            <span
+                              className={cn(
+                                "block text-[15px] font-bold",
+                                selected ? "text-primary-foreground" : "text-foreground",
+                              )}
+                            >
+                              {activeGroup?.label}
+                            </span>
+                            <span
+                              className={cn(
+                                "mt-0.5 block text-[13px]",
+                                selected ? "text-primary-foreground/80" : low ? "text-warning" : "text-muted-foreground",
+                              )}
+                            >
+                              {status}
+                            </span>
+                          </span>
+                          {selected && (
+                            <Check className="ml-auto size-5 shrink-0 text-primary-foreground" strokeWidth={2.75} aria-hidden />
+                          )}
                         </button>
                       );
                     })}

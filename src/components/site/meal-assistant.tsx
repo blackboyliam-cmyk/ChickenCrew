@@ -93,11 +93,13 @@ export function MealAssistant() {
 
   if (!open) {
     if (
+      pathname === "/" ||
       pathname === "/checkout" ||
       pathname === "/login" ||
       pathname.startsWith("/pay/") ||
       pathname.startsWith("/orders/") ||
-      pathname.startsWith("/cart")
+      pathname.startsWith("/cart") ||
+      pathname.startsWith("/account")
     )
       return null;
     return (

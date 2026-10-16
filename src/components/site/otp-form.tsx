@@ -187,7 +187,7 @@ export function OtpForm({
         <Button
           type="submit"
           size="lg"
-          className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark"
+          className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
           disabled={!ready || busy}
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : signup ? "Send code" : "Get OTP"}
@@ -278,7 +278,7 @@ export function OtpForm({
       <Button
         type="submit"
         size="lg"
-        className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark"
+        className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
         disabled={code.length !== CODE_LENGTH || busy}
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : submitLabel}

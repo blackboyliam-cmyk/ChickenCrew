@@ -501,7 +501,17 @@ export function buildFaqs(settings: PublicSettings, slotLabels: string[]): Faq[]
 
 export function getHome() {
   const settings = getPublicSettings();
-  const slots = listDeliverySlots().flatMap((group) => group.slots.map((slot) => `${group.label} ${slot.label}`)).slice(0, 4);
+  const nextSlots = listDeliverySlots()
+    .flatMap((group) =>
+      group.slots.map((slot) => ({
+        id: `${slot.date}|${slot.id}`,
+        timeLabel: slot.label,
+        dayLabel: group.label,
+        remaining: slot.remaining,
+      })),
+    )
+    .slice(0, 3);
+  const slots = nextSlots.map((slot) => `${slot.dayLabel} ${slot.timeLabel}`);
   return {
     settings,
     categories: listCategories(),
@@ -512,6 +522,7 @@ export function getHome() {
       fee: settings.deliveryFee,
       freeAbove: settings.freeDeliveryAbove,
       slotSummary: slots,
+      nextSlots,
       pincodes: settings.servicePincodes,
     },
   };

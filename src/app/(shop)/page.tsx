@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Check, MapPin, Truck } from "lucide-react";
+import { ArrowRight, Check, MapPin, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CategoryGrid } from "@/components/site/category-tile";
 import { ComboCard, OfferCard } from "@/components/site/merch";
+import { NextSlots } from "@/components/site/next-slots";
 import { ProductGrid } from "@/components/site/product-card";
 import { EmptyState, SectionHeader } from "@/components/site/states";
 import { JsonLd } from "@/components/site/json-ld";
@@ -17,7 +18,6 @@ export default async function HomePage() {
   }));
   const { settings } = home;
   const categories = home.categories.filter((c) => c.slug !== "offers" && c.slug !== "combos").slice(0, 8);
-  const nextSlot = home.delivery.slotSummary[0];
 
   const trust = [
     "Freshly prepared",
@@ -74,15 +74,6 @@ export default async function HomePage() {
               className="object-cover"
             />
           </div>
-          {nextSlot && (
-            <div className="absolute bottom-3 left-3 flex items-center gap-2.5 rounded-xl bg-card px-3 py-2.5 shadow-raised md:bottom-5 md:left-5">
-              <CalendarClock className="size-5 shrink-0 text-primary" aria-hidden />
-              <span className="leading-tight">
-                <span className="block text-[11px] text-muted-foreground">Next delivery slot</span>
-                <span className="block text-sm font-bold">{nextSlot}</span>
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="lg:col-start-1 lg:row-start-2 lg:self-start">
@@ -101,16 +92,18 @@ export default async function HomePage() {
               Explore cuts
             </Link>
           </div>
-          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-foreground/80">
+          <ul className="mt-5 flex flex-col gap-2 text-[13px] font-medium text-foreground/80 sm:flex-row sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
             {trust.slice(0, 3).map((label) => (
               <li key={label} className="flex items-center gap-1.5">
-                <Check className="size-4 text-success" strokeWidth={2.75} aria-hidden />
-                {label}
+                <Check className="size-4 shrink-0 text-success" strokeWidth={2.75} aria-hidden />
+                <span>{label}</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
+
+      <NextSlots slots={home.delivery.nextSlots} href="/shop" />
 
       {/* Shop by cut */}
       <section id="shop-by-cut" className="scroll-mt-32 py-6 md:py-10">
@@ -227,12 +220,6 @@ export default async function HomePage() {
                   home.delivery.freeAbove != null && home.delivery.fee > 0
                     ? `Free on orders above ${formatINR(home.delivery.freeAbove)}`
                     : null,
-              },
-              {
-                icon: CalendarClock,
-                label: "Next slots",
-                value: nextSlot || "Not published yet",
-                note: home.delivery.slotSummary.slice(1, 3).join(" · ") || null,
               },
               {
                 icon: MapPin,

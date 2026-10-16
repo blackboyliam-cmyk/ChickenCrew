@@ -42,7 +42,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <NativeChrome />
           <SplashScreen />
           {children}
-          <Toaster position="top-center" />
+          <Toaster
+            position="top-center"
+            offset={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
+            mobileOffset={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
+          />
         </ThemeProvider>
       </body>
     </html>

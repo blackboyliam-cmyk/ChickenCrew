@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Clock3, MapPin, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clock3, MapPin, RotateCcw } from "lucide-react";
 import { GoogleButton } from "@/components/site/google-button";
 import { Mark } from "@/components/site/logo";
 import { OtpForm } from "@/components/site/otp-form";
@@ -46,8 +47,26 @@ function SignIn() {
   }
 
   return (
-    <div className="flex justify-center px-0 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-4 md:py-12 md:pb-12">
-      <div className="grid w-full max-w-[960px] overflow-hidden bg-white md:rounded-3xl md:border md:shadow-card md:grid-cols-[1fr_1.05fr]">
+    <div className="flex min-h-dvh flex-col bg-background md:justify-center md:bg-[#f6f4f0] md:px-4 md:py-12">
+      {/* Mobile-only top bar — replaces the shop header on this screen */}
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-card px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:hidden">
+        <Link
+          href="/"
+          className="grid size-10 place-items-center rounded-xl text-foreground hover:bg-muted"
+          aria-label="Back to shop"
+        >
+          <ArrowLeft className="size-5" />
+        </Link>
+        <Mark className="size-9" />
+        <div className="min-w-0">
+          <p className="font-[family-name:var(--font-plus-jakarta)] text-[15px] font-extrabold tracking-tight">
+            Chicken<span className="text-primary">Crew</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{signup ? "Create your account" : "Welcome back"}</p>
+        </div>
+      </header>
+
+      <div className="mx-auto grid w-full max-w-[960px] flex-1 overflow-hidden bg-white md:min-h-0 md:flex-none md:rounded-3xl md:border md:shadow-card md:grid-cols-[1fr_1.05fr]">
         <aside className="relative hidden min-h-[520px] flex-col justify-end overflow-hidden bg-charcoal p-8 text-white md:flex">
           <Image src="/media/hero.jpg" alt="" fill sizes="480px" className="object-cover opacity-40" priority />
           <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/70 to-charcoal/10" />
@@ -70,9 +89,9 @@ function SignIn() {
           </div>
         </aside>
 
-        <section className="px-4 py-5 sm:px-10 sm:py-10 md:py-12">
-          <div className="mx-auto w-full max-w-sm">
-            <div className="mb-5 flex items-center gap-3 md:hidden">
+        <section className="flex flex-1 flex-col px-4 py-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-10 sm:py-10 md:py-12">
+          <div className="mx-auto w-full max-w-sm flex-1">
+            <div className="mb-6 hidden items-center gap-3 md:flex">
               <Mark className="size-11" />
               <div>
                 <p className="font-[family-name:var(--font-plus-jakarta)] text-base font-extrabold tracking-tight">

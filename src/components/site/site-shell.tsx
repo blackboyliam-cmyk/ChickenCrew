@@ -78,7 +78,8 @@ export function SiteShell({
 function ShellInner({ admin, children }: { admin: boolean; children: React.ReactNode }) {
   const { offline } = useShop();
   const pathname = usePathname();
-  const hideChrome = pathname.startsWith("/pay/");
+  // Focused flows: no shop header / bottom nav / floating cart chrome.
+  const hideChrome = pathname.startsWith("/pay/") || pathname === "/login";
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip">
       <a
@@ -108,8 +109,10 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
       <main
         id="main"
         className={cn(
-          "mx-auto w-full max-w-[1320px] flex-1 px-4 md:px-6",
-          hideChrome ? "pb-8" : "pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-16",
+          "mx-auto w-full flex-1",
+          hideChrome
+            ? "max-w-none px-0 pb-0"
+            : "max-w-[1320px] px-4 pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:px-6 md:pb-16",
         )}
       >
         {children}
@@ -283,22 +286,23 @@ function LocationPill({
       )}
     >
       <MapPin className={cn("shrink-0 text-primary", compact ? "size-3.5" : "size-4")} aria-hidden />
-      <span className={cn("leading-tight", compact ? "shrink-0" : "min-w-0")}>
+      <span className={cn("min-w-0 leading-tight", compact ? "shrink" : "")}>
         {!compact && <span className="block text-[11px] text-muted-foreground">Delivering to</span>}
-        <span className="flex items-center gap-1 truncate whitespace-nowrap font-semibold text-foreground">
-          {compact && <span className="font-normal text-muted-foreground">Deliver to</span>}
-          {location.pincode || "Select location"}
+        <span className="flex min-w-0 items-center gap-1 font-semibold text-foreground">
+          {compact && <span className="shrink-0 font-normal text-muted-foreground">Deliver to</span>}
+          <span className="truncate">{location.pincode || "Select location"}</span>
           <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         </span>
       </span>
       {compact && (
-        <span className="ml-auto flex min-w-0 items-center gap-1.5 text-muted-foreground">
+        <span className="ml-auto flex max-w-[46%] shrink-0 items-center gap-1.5 text-muted-foreground">
           {status === "no" ? (
             <span className="font-medium text-destructive">Not serviceable</span>
           ) : next ? (
             <>
               <Clock className="size-3.5 shrink-0" aria-hidden />
-              <span className="truncate">Next: {next}</span>
+              {/* Day only on the narrow bar — full slot shows on the home hero card */}
+              <span className="truncate">Next: {next.split(",")[0]?.trim() || next}</span>
             </>
           ) : null}
         </span>
