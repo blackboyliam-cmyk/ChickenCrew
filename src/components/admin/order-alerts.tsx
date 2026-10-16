@@ -142,7 +142,9 @@ export function OrderAlerts() {
     <div
       className={cn(
         "fixed right-4 z-40 flex items-center gap-2 print:hidden",
-        pathname.startsWith("/admin/settings") ? "bottom-24" : "bottom-4",
+        pathname.startsWith("/admin/settings")
+          ? "bottom-[calc(6rem+env(safe-area-inset-bottom))]"
+          : "bottom-[calc(1rem+env(safe-area-inset-bottom))]",
       )}
     >
       {waiting > 0 && (

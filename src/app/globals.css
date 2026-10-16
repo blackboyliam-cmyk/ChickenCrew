@@ -341,6 +341,7 @@
 }
 
 /* Capacitor Android: status-bar insets are often 0 while the WebView still draws under the clock. */
-html.native-android header.sticky {
+html.native-android header.sticky,
+html.native-android .admin-topbar {
   padding-top: max(env(safe-area-inset-top, 0px), 28px);
 }

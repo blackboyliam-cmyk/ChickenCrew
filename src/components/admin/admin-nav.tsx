@@ -109,7 +109,7 @@ export function AdminTopbar() {
   const isActive = useActive();
   const logout = useLogout();
   return (
-    <div className="sticky top-0 z-30 bg-charcoal text-white lg:hidden">
+    <div className="admin-topbar sticky top-0 z-30 bg-charcoal pt-[env(safe-area-inset-top)] text-white lg:hidden">
       <div className="flex h-14 items-center justify-between px-4">
         <Brand />
         <div className="flex items-center gap-1">

@@ -95,16 +95,16 @@ export default function AdminHome() {
       <AdminHeader title="Overview" description="Today at a glance. Figures update when you reload this page." />
       {error && <ErrorBanner message={error} onRetry={() => void load()} />}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, highlight }) => (
-          <div key={label} className="rounded-2xl border bg-white p-4 shadow-card md:p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
-              <span className={`grid size-8 place-items-center rounded-lg ${highlight ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}>
+          <div key={label} className="flex h-full flex-col rounded-2xl border bg-white p-4 shadow-card md:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[13px] leading-snug font-medium text-muted-foreground">{label}</p>
+              <span className={`grid size-8 shrink-0 place-items-center rounded-lg ${highlight ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}>
                 <Icon className="size-4" />
               </span>
             </div>
-            <p className="mt-3 text-2xl font-extrabold tracking-tight md:text-[28px]">{value}</p>
+            <p className="mt-auto pt-3 text-2xl font-extrabold tracking-tight md:text-[28px]">{value}</p>
           </div>
         ))}
       </div>
@@ -129,7 +129,7 @@ export default function AdminHome() {
                 <li key={order.id}>
                   <Link href={`/admin/orders?open=${order.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40">
                     <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-2 text-sm font-semibold">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                         #{order.number}
                         <Badge tone={STATUS[order.status].tone}>{STATUS[order.status].label}</Badge>
                       </p>
@@ -137,9 +137,9 @@ export default function AdminHome() {
                         {order.address.name} · {order.items.map((item) => `${item.name} ${item.weight} ×${item.qty}`).join(", ")}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">{formatINR(order.total)}</p>
-                      <p className="text-xs text-muted-foreground">{orderTime(order.createdAt)}</p>
+                    <div className="shrink-0 text-right">
+                      <p className="whitespace-nowrap text-sm font-bold">{formatINR(order.total)}</p>
+                      <p className="whitespace-nowrap text-xs text-muted-foreground">{orderTime(order.createdAt)}</p>
                     </div>
                   </Link>
                 </li>
