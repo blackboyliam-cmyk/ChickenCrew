@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+const PERMS_ASKED_KEY = "cc-native-perms-asked";
+
 /**
- * When the shop runs inside the Capacitor Android/iOS shell, keep the WebView
- * below the system status bar so headers aren't covered by the clock/icons.
+ * Capacitor shell: status bar insets + first-launch permission prompts
+ * (location for delivery pin, notifications for order alerts).
  */
 export function NativeChrome() {
   const pathname = usePathname();
@@ -38,6 +40,24 @@ export function NativeChrome() {
         document.documentElement.classList.remove("native-android");
       } catch {
         // Plugin missing or web — keep CSS fallback for Android.
+      }
+
+      // Ask once per install so map pin + order alerts can work.
+      try {
+        if (localStorage.getItem(PERMS_ASKED_KEY) === "1") return;
+        localStorage.setItem(PERMS_ASKED_KEY, "1");
+
+        const { Geolocation } = await import("@capacitor/geolocation");
+        await Geolocation.requestPermissions();
+
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+        await LocalNotifications.requestPermissions();
+
+        if ("Notification" in window && Notification.permission === "default") {
+          await Notification.requestPermission();
+        }
+      } catch {
+        // User denied or plugin unavailable — site keeps working without them.
       }
     })();
   }, [pathname]);

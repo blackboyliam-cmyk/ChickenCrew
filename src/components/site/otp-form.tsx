@@ -184,7 +184,12 @@ export function OtpForm({
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-12 w-full rounded-xl text-[15px] font-bold" disabled={!ready || busy}>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark"
+          disabled={!ready || busy}
+        >
           {busy ? <Loader2 className="size-4 animate-spin" /> : signup ? "Send code" : "Get OTP"}
         </Button>
         <p className="text-center text-xs leading-5 text-muted-foreground">
@@ -273,7 +278,7 @@ export function OtpForm({
       <Button
         type="submit"
         size="lg"
-        className="h-12 w-full rounded-xl text-[15px] font-bold"
+        className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark"
         disabled={code.length !== CODE_LENGTH || busy}
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : submitLabel}

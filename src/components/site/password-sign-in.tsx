@@ -117,7 +117,11 @@ export function PasswordSignIn({ onDone }: { onDone?: () => void }) {
           {error}
         </p>
       )}
-      <Button type="submit" disabled={busy || !email.trim() || !password} className="h-12 w-full rounded-xl text-[15px] font-bold">
+      <Button
+        type="submit"
+        disabled={busy || !email.trim() || !password}
+        className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-primary-foreground hover:bg-primary-dark"
+      >
         {busy ? <Loader2 className="size-4 animate-spin" /> : "Sign in with password"}
       </Button>
     </form>
