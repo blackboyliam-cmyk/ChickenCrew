@@ -10,21 +10,37 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
 /**
- * Opens UPI / payment-app deep links outside the WebView so Razorpay can show
- * UPI the same way it does in Chrome. Also strips the "; wv" WebView marker
- * that some gateways use to hide UPI Intent.
+ * Opens UPI / payment-app deep links outside the WebView. Also uses a Chrome-like
+ * user agent so payment gateways don't treat the shell as a locked-down WebView.
  */
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         WebView webView = getBridge().getWebView();
-        WebSettings settings = webView.getSettings();
-        String ua = settings.getUserAgentString();
-        if (ua != null && ua.contains("; wv")) {
-            settings.setUserAgentString(ua.replace("; wv", ""));
+        webView.post(this::configureWebView);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            webView.post(this::configureWebView);
         }
+    }
+
+    private void configureWebView() {
+        WebView webView = getBridge().getWebView();
+        if (webView == null) return;
+
+        WebSettings settings = webView.getSettings();
+        // Razorpay hides UPI when it detects "; wv" (Android WebView).
+        settings.setUserAgentString(
+            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
+        );
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setDomStorageEnabled(true);
 
         webView.setWebViewClient(new BridgeWebViewClient(getBridge()) {
             @Override

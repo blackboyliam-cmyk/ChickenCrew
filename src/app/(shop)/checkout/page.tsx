@@ -16,7 +16,8 @@ import { EmptyState } from "@/components/site/states";
 import { MapPicker } from "@/components/maps/map-picker";
 import { api, ApiClientError } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
-import { loadRazorpay } from "@/lib/razorpay-client";
+import { isNativeApp } from "@/lib/native";
+import { loadRazorpay, openNativePayment, razorpayCheckoutOptions, waitForNativePayment } from "@/lib/razorpay-client";
 import type { Address, DeliverySlotOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -253,47 +254,63 @@ export default function CheckoutPage() {
       setBusy("paying");
       await refresh();
       void api("/api/analytics", { method: "POST", body: { event: "payment_started", props: { order: data.order.number } } }).catch(() => undefined);
+
+      // Android/iOS WebView hides Razorpay UPI — open checkout in the system browser instead.
+      if (isNativeApp()) {
+        await openNativePayment(data.order.id);
+        const paid = await waitForNativePayment(data.order.id);
+        setAwaitingPayment(null);
+        setBusy("");
+        if (paid) {
+          void api("/api/analytics", { method: "POST", body: { event: "purchase", props: { order: data.order.number, total: data.order.total } } }).catch(() => undefined);
+          router.push(`/orders/${data.order.id}?placed=1`);
+        } else {
+          router.push(`/orders/${data.order.id}?failed=1`);
+        }
+        return;
+      }
+
       const payment = await api<{ keyId: string; razorpayOrderId: string; amount: number; currency: string }>("/api/payment/create", {
         method: "POST",
         body: { orderId: data.order.id },
       });
       await loadRazorpay();
       if (!window.Razorpay) throw new ApiClientError("Payment could not be started. Please try again.");
-      const checkout = new window.Razorpay({
-        key: payment.keyId,
-        amount: payment.amount,
-        currency: payment.currency,
-        name: settings.name,
-        description: data.order.number,
-        order_id: payment.razorpayOrderId,
-        prefill: { name: form.name, contact: form.phone, email: form.email },
-        theme: { color: "#b91c1c" },
-        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          setBusy("paying");
-          try {
-            const verified = await api<{ order: { id: string; number: string; total: number } }>("/api/payment/verify", {
-              method: "POST",
-              body: { orderId: data.order.id, ...response },
-            });
-            void api("/api/analytics", { method: "POST", body: { event: "purchase", props: { order: verified.order.number, total: verified.order.total } } }).catch(() => undefined);
-            setAwaitingPayment(null);
-            router.push(`/orders/${verified.order.id}?placed=1`);
-          } catch (err) {
-            setBusy("");
-            setAwaitingPayment(null);
-            setError(err instanceof ApiClientError ? err.message : "We couldn't confirm the payment. Check your order page before paying again.");
-            router.push(`/orders/${data.order.id}?failed=1`);
-          }
-        },
-        modal: {
-          ondismiss: () => {
+      const checkout = new window.Razorpay(
+        razorpayCheckoutOptions({
+          key: payment.keyId,
+          amount: payment.amount,
+          currency: payment.currency,
+          name: settings.name,
+          description: data.order.number,
+          orderId: data.order.id,
+          razorpayOrderId: payment.razorpayOrderId,
+          prefill: { name: form.name, contact: form.phone, email: form.email },
+          onPaid: async (response) => {
+            setBusy("paying");
+            try {
+              const verified = await api<{ order: { id: string; number: string; total: number } }>("/api/payment/verify", {
+                method: "POST",
+                body: { orderId: data.order.id, ...response },
+              });
+              void api("/api/analytics", { method: "POST", body: { event: "purchase", props: { order: verified.order.number, total: verified.order.total } } }).catch(() => undefined);
+              setAwaitingPayment(null);
+              router.push(`/orders/${verified.order.id}?placed=1`);
+            } catch (err) {
+              setBusy("");
+              setAwaitingPayment(null);
+              setError(err instanceof ApiClientError ? err.message : "We couldn't confirm the payment. Check your order page before paying again.");
+              router.push(`/orders/${data.order.id}?failed=1`);
+            }
+          },
+          onCancel: () => {
             void api("/api/payment/abandon", { method: "POST", body: { orderId: data.order.id } }).catch(() => undefined);
             setBusy("");
             setAwaitingPayment(null);
             router.push(`/orders/${data.order.id}?failed=1`);
           },
-        },
-      });
+        }),
+      );
       checkout.open();
     } catch (err) {
       setBusy("");
