@@ -111,13 +111,13 @@ export default function AddressesPage() {
         ) : addresses === null ? (
           <ListSkeleton rows={2} />
         ) : addresses.length === 0 ? (
-          <div className="flex flex-col items-center rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
+          <div className="flex flex-col items-center rounded-2xl border border-dashed bg-card px-5 py-10 text-center sm:px-6 sm:py-12">
             <span className="grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
               <MapPin className="size-6" />
             </span>
             <p className="mt-4 text-lg font-bold">No saved addresses</p>
-            <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">Add one now and checkout will fill it in for you.</p>
-            <Button className="mt-6 h-11 rounded-xl px-6 font-semibold" onClick={() => open()}>
+            <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">Add one now and checkout will fill it in for you.</p>
+            <Button className="mt-6 h-12 w-full max-w-xs rounded-xl px-6 font-semibold sm:h-11 sm:w-auto" onClick={() => open()}>
               <Plus className="size-4" /> Add address
             </Button>
           </div>

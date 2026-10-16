@@ -23,7 +23,7 @@ export function MobileFilterBar({
 
   return (
     <>
-      <div className="sticky top-[96px] z-30 -mx-4 mb-4 grid grid-cols-2 border-y bg-card/95 backdrop-blur-sm lg:hidden">
+      <div className="mobile-filter-bar sticky top-[calc(6.5rem+env(safe-area-inset-top))] z-30 -mx-4 mb-4 grid grid-cols-2 border-y bg-card/95 backdrop-blur-sm lg:hidden">
         <button
           type="button"
           onClick={() => setPanel("filter")}

@@ -158,13 +158,13 @@ export default function OrderPage() {
     shopWhatsapp && !cancelled && order.status !== "delivered" ? waLink(shopWhatsapp, alertMessage(order, settings.name, origin)) : null;
 
   return (
-    <div className="mx-auto max-w-3xl py-6 md:py-10">
+    <div className="mx-auto max-w-3xl py-4 md:py-10">
       {showFailed ? (
-        <div className="flex flex-col items-center rounded-3xl border bg-card px-6 py-10 text-center">
+        <div className="flex flex-col items-center rounded-3xl border bg-card px-5 py-8 text-center sm:px-6 sm:py-10">
           <span className="grid size-16 animate-pop place-items-center rounded-full bg-destructive/10 text-destructive">
             <XCircle className="size-8" strokeWidth={2.5} aria-hidden />
           </span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight md:text-3xl">Order failed</h1>
+          <h1 className="mt-4 text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-3xl">Order failed</h1>
           <p className="mt-1 text-sm text-muted-foreground">Order #{order.number}</p>
           <p className="mt-3 max-w-sm text-[15px] text-muted-foreground">
             Payment was cancelled or didn’t go through. You can try again — your order is still saved.
@@ -190,11 +190,11 @@ export default function OrderPage() {
           </div>
         </div>
       ) : showSuccess ? (
-        <div className="flex flex-col items-center rounded-3xl border bg-card px-6 py-10 text-center">
+        <div className="flex flex-col items-center rounded-3xl border bg-card px-5 py-8 text-center sm:px-6 sm:py-10">
           <span className="grid size-16 animate-pop place-items-center rounded-full bg-success text-white">
             <Check className="size-8" strokeWidth={3} aria-hidden />
           </span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight md:text-3xl">Order confirmed</h1>
+          <h1 className="mt-4 text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-3xl">Order confirmed</h1>
           <p className="mt-1 text-sm text-muted-foreground">Order #{order.number}</p>
           <p className="mt-3 text-[15px]">Your order is being prepared.</p>
           <div className="mt-5 flex items-center gap-2.5 rounded-xl bg-muted px-4 py-3 text-left">

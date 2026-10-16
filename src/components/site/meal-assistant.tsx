@@ -92,7 +92,14 @@ export function MealAssistant() {
   }
 
   if (!open) {
-    if (pathname === "/checkout" || pathname === "/login") return null;
+    if (
+      pathname === "/checkout" ||
+      pathname === "/login" ||
+      pathname.startsWith("/pay/") ||
+      pathname.startsWith("/orders/") ||
+      pathname.startsWith("/cart")
+    )
+      return null;
     return (
       <button
         type="button"

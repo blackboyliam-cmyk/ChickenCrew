@@ -61,8 +61,8 @@ export function AdminHeader({
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight md:text-[28px]">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>}
+        <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[28px]">{title}</h1>
+        {description && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
       </div>
       {action}
     </header>
@@ -89,15 +89,15 @@ export function Panel({
   return (
     <section id={id} className={cn("scroll-mt-20 rounded-2xl border bg-white shadow-card", className)}>
       {(title || action) && (
-        <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
-          <div>
+        <div className="flex items-start justify-between gap-3 border-b px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="min-w-0">
             {title && <h2 className="text-[15px] font-bold">{title}</h2>}
             {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
           </div>
           {action}
         </div>
       )}
-      <div className={cn("p-5", bodyClassName)}>{children}</div>
+      <div className={cn("p-4 sm:p-5", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -392,7 +392,7 @@ export function SearchInput({ value, onChange, placeholder }: { value: string; o
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
       aria-label={placeholder}
-      className={cn(inputClass, "h-10 max-w-xs text-sm")}
+      className={cn(inputClass, "h-11 w-full max-w-none text-sm sm:h-10 sm:max-w-xs")}
     />
   );
 }

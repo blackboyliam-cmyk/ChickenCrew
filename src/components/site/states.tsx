@@ -21,14 +21,14 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col items-center rounded-2xl border border-dashed bg-card px-6 py-12 text-center", className)}>
+    <div className={cn("flex flex-col items-center rounded-2xl border border-dashed bg-card px-5 py-10 text-center sm:px-6 sm:py-12", className)}>
       <span className="grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
         <Icon className="size-6" aria-hidden />
       </span>
       <h2 className="mt-4 text-lg font-bold tracking-tight">{title}</h2>
-      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{body}</p>
+      <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">{body}</p>
       {actionLabel && href && (
-        <Button asChild className="mt-6 h-11 rounded-xl px-6 font-semibold">
+        <Button asChild className="mt-6 h-12 w-full max-w-xs rounded-xl px-6 font-semibold sm:w-auto">
           <Link href={href}>{actionLabel}</Link>
         </Button>
       )}

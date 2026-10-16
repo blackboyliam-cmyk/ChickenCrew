@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               {product.category.name}
             </Link>
           )}
-          <h1 className="mt-1 text-[26px] leading-tight font-extrabold tracking-tight md:text-[34px]">{product.name}</h1>
+          <h1 className="mt-1 text-[24px] leading-tight font-extrabold tracking-tight sm:text-[26px] md:text-[34px]">{product.name}</h1>
           {product.reviewCount > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
               {product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"}
@@ -127,9 +127,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </div>
 
       {info.length > 0 && (
-        <section className="mt-10 grid gap-3 md:mt-14 md:grid-cols-2" aria-label="Product information">
+        <section className="mt-8 grid gap-2.5 md:mt-14 md:grid-cols-2 md:gap-3" aria-label="Product information">
           {info.map(([title, body]) => (
-            <div key={title} className="rounded-2xl border bg-card p-5">
+            <div key={title} className="rounded-2xl border bg-card p-4 sm:p-5">
               <h2 className="text-base font-bold">{title}</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{body}</p>
             </div>

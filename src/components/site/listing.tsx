@@ -123,8 +123,8 @@ export async function Listing({
   );
 
   return (
-    <div className="pt-5 md:pt-8">
-      <nav aria-label="Breadcrumb" className="mb-2 text-xs text-muted-foreground">
+    <div className="pt-4 md:pt-8">
+      <nav aria-label="Breadcrumb" className="mb-2 hidden text-xs text-muted-foreground md:block">
         <Link href="/" className="hover:text-foreground">
           Home
         </Link>
@@ -142,13 +142,13 @@ export async function Listing({
         )}
       </nav>
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight md:text-[32px]">{title}</h1>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[32px]">{title}</h1>
+          {description && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>}
         </div>
       </div>
 
-      <nav aria-label="Categories" className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden">
+      <nav aria-label="Categories" className="no-scrollbar -mx-4 mt-3.5 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden">
         <CategoryChip href="/shop" active={!query.category} label="All" />
         {categories.map((category) => (
           <CategoryChip

@@ -150,7 +150,7 @@ export function OrderAlerts() {
       {waiting > 0 && (
         <Link
           href="/admin/orders"
-          className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-white shadow-float hover:bg-primary-dark"
+          className="flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-white shadow-float hover:bg-primary-dark"
         >
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-75 motion-reduce:animate-none" />
@@ -165,7 +165,7 @@ export function OrderAlerts() {
         aria-pressed={sound}
         title={sound ? "New-order sound is on" : "New-order sound is off"}
         className={cn(
-          "grid size-10 place-items-center rounded-full border bg-white shadow-float transition-colors hover:bg-muted",
+          "grid size-11 place-items-center rounded-full border bg-white shadow-float transition-colors hover:bg-muted",
           !sound && "text-muted-foreground",
         )}
       >

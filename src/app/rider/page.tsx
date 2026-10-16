@@ -172,8 +172,8 @@ export default function RiderPage() {
   }
 
   return (
-    <main className="mx-auto max-w-lg pb-10">
-      <header className="sticky top-0 z-20 bg-charcoal px-4 pt-4 pb-5 text-white">
+    <main className="mx-auto max-w-lg pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+      <header className="rider-topbar sticky top-0 z-20 bg-charcoal px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-5 text-white">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-white/55">{t("riderLabel")}</p>

@@ -18,9 +18,9 @@ export default async function OffersPage() {
   }));
 
   return (
-    <div className="pt-5 md:pt-8">
-      <h1 className="text-2xl font-extrabold tracking-tight md:text-[32px]">Today&apos;s deals</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Prices and discounts are set by the shop and update live.</p>
+    <div className="pt-4 md:pt-8">
+      <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[32px]">Today&apos;s deals</h1>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Prices and discounts are set by the shop and update live.</p>
 
       {offers.length === 0 && discounted.length === 0 ? (
         <EmptyState

@@ -65,9 +65,9 @@ export default function CartPage() {
   const blocked = cart.items.some((item) => !item.inStock);
 
   return (
-    <div className="py-6">
-      <div className="mb-5 flex items-baseline justify-between">
-        <h1 className="text-2xl font-extrabold tracking-tight md:text-[32px]">Your cart</h1>
+    <div className="py-4 md:py-6">
+      <div className="mb-4 flex items-baseline justify-between md:mb-5">
+        <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[32px]">Your cart</h1>
         <p className="text-sm text-muted-foreground">
           {cart.count} {cart.count === 1 ? "item" : "items"}
         </p>

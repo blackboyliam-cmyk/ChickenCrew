@@ -70,7 +70,9 @@ export default async function BillPage({
       <article
         className={cn(
           "relative mx-auto bg-white text-[#1c1917] shadow-card print:shadow-none",
-          receipt ? "max-w-[80mm] px-3 py-4 text-[11px] leading-snug" : "max-w-3xl rounded-2xl p-8 text-sm md:p-10 print:rounded-none print:p-0",
+          receipt
+            ? "max-w-[80mm] px-3 py-4 text-[11px] leading-snug"
+            : "max-w-3xl rounded-2xl p-5 text-sm sm:p-8 md:p-10 print:rounded-none print:p-0",
         )}
       >
         {cancelled && (

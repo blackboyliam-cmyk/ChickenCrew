@@ -23,17 +23,17 @@ export default async function ContactPage() {
     <div className="pb-6">
       <PageHero eyebrow="We're here to help" title="Contact us" body="Questions about an order, a cut, or delivery? Reach us the way that suits you." />
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6 grid gap-2.5 sm:mt-8 sm:grid-cols-2 sm:gap-3">
         {cards.map(({ icon: Icon, label, value, href, cta }) => {
           const external = href.startsWith("http");
           const body = (
             <>
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary sm:size-12">
                 <Icon className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-                <p className="mt-0.5 break-words font-bold">{value || "Coming soon"}</p>
+                <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase sm:text-xs">{label}</p>
+                <p className="mt-0.5 break-words text-[15px] font-bold sm:text-base">{value || "Coming soon"}</p>
                 {href && (
                   <p className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary">
                     {cta} <ArrowUpRight className="size-3.5" />
@@ -42,7 +42,7 @@ export default async function ContactPage() {
               </div>
             </>
           );
-          const className = "flex gap-4 rounded-2xl border bg-white p-5 shadow-card";
+          const className = "flex gap-3.5 rounded-2xl border bg-white p-4 shadow-card sm:gap-4 sm:p-5";
           return href ? (
             <a
               key={label}

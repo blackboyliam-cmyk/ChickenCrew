@@ -175,3 +175,26 @@ export function passwordLoginConfigured() {
   const review = Boolean((process.env.TEST_LOGIN_EMAIL || "").trim() && process.env.TEST_LOGIN_PASSWORD);
   return owner || review;
 }
+
+const PAYMENT_TOKEN_MS = 1000 * 60 * 30;
+
+/** Short-lived token so Chrome Custom Tabs can pay without the WebView session cookie. */
+export function createPaymentToken(orderId: string, userId: string) {
+  return sign({ purpose: "pay", oid: orderId, uid: userId, exp: Date.now() + PAYMENT_TOKEN_MS });
+}
+
+export function readPaymentToken(token: string | undefined | null): { orderId: string; userId: string } | null {
+  const payload = verifyToken<{ purpose?: string; oid?: string; uid?: string; exp?: number }>(token);
+  if (!payload || payload.purpose !== "pay" || !payload.oid || !payload.uid || !payload.exp) return null;
+  if (payload.exp < Date.now()) return null;
+  return { orderId: payload.oid, userId: payload.uid };
+}
+
+/** Session cookie, or a payment token that matches this order. */
+export async function readPaymentUserId(orderId: string, paymentToken?: string | null): Promise<string | null> {
+  const userId = await readUserId();
+  if (userId) return userId;
+  const paid = readPaymentToken(paymentToken);
+  if (!paid || paid.orderId !== orderId) return null;
+  return paid.userId;
+}

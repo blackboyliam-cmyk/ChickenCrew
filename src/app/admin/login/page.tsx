@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-charcoal px-4 py-10">
+    <main className="relative flex min-h-dvh items-center justify-center bg-charcoal px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"

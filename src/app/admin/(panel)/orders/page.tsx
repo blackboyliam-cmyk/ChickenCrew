@@ -207,16 +207,18 @@ function OrdersView() {
       />
       {error && <ErrorBanner message={error} onRetry={() => void reload()} />}
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-xl border bg-white p-1">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="no-scrollbar -mx-3 flex gap-1 overflow-x-auto px-3 sm:mx-0 sm:rounded-xl sm:border sm:bg-white sm:p-1 sm:px-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-colors",
-                tab === t.id ? "bg-charcoal text-white" : "text-muted-foreground hover:text-foreground",
+                "flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3.5 text-[13px] font-semibold transition-colors sm:h-9 sm:rounded-lg sm:border-0",
+                tab === t.id
+                  ? "border-charcoal bg-charcoal text-white"
+                  : "border-transparent bg-white text-muted-foreground hover:text-foreground sm:bg-transparent",
               )}
             >
               {t.label}
@@ -265,7 +267,7 @@ function OrdersView() {
                     type="button"
                     onClick={() => setOpenId(expanded ? null : order.id)}
                     aria-expanded={expanded}
-                    className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-muted/40"
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/40 sm:px-5 sm:py-4"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">

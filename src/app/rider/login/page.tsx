@@ -31,13 +31,13 @@ export default function RiderLoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-charcoal px-4 py-10">
+    <main className="relative flex min-h-dvh items-center justify-center bg-charcoal px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
         style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }}
       />
-      <RiderLangSwitch className="absolute top-4 right-4 bg-white/10 text-white hover:bg-white/15" />
+      <RiderLangSwitch className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 bg-white/10 text-white hover:bg-white/15" />
       <div className="relative w-full max-w-[400px]">
         <div className="mb-6 flex items-center justify-center gap-2.5 text-white">
           <span className="grid size-10 place-items-center rounded-xl bg-primary text-sm font-black">CC</span>

@@ -51,14 +51,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <form onSubmit={save} className="max-w-lg rounded-2xl border bg-card p-5 md:p-6">
+    <form onSubmit={save} className="max-w-lg rounded-2xl border bg-card p-4 sm:p-5 md:p-6">
       <h2 className="text-lg font-bold">Profile</h2>
       <div className="mt-4 space-y-4">
         <div>
           <Label htmlFor="name" className="text-xs font-semibold text-muted-foreground">
             Name
           </Label>
-          <Input id="name" autoComplete="name" className="mt-1 h-11" value={name} onChange={(event) => setName(event.target.value)} />
+          <Input id="name" autoComplete="name" className="mt-1.5 h-12" value={name} onChange={(event) => setName(event.target.value)} />
         </div>
         <div>
           <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
@@ -66,7 +66,7 @@ export default function ProfilePage() {
           </Label>
           <Input
             id="phone"
-            className="mt-1 h-11 bg-muted"
+            className="mt-1.5 h-12 bg-muted"
             value={user.phone || (user.email ? "Signed in with email" : "Signed in with Google")}
             readOnly
             aria-describedby="phone-note"
@@ -85,7 +85,7 @@ export default function ProfilePage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="mt-1 h-11"
+            className="mt-1.5 h-12"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -99,7 +99,7 @@ export default function ProfilePage() {
       <button
         type="submit"
         disabled={busy}
-        className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
+        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground hover:bg-primary-dark disabled:opacity-60 sm:w-auto"
       >
         {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
         Save profile

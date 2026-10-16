@@ -50,15 +50,15 @@ export default async function HomePage() {
       <JsonLd data={business} />
 
       {/* Hero */}
-      <section className="grid items-center gap-x-12 gap-y-5 pt-5 pb-8 md:pt-10 md:pb-14 lg:grid-cols-[1fr_1.05fr]">
+      <section className="grid items-center gap-x-12 gap-y-4 pt-4 pb-6 md:gap-y-5 md:pt-10 md:pb-14 lg:grid-cols-[1fr_1.05fr]">
         <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
           <p className="text-xs font-semibold text-primary md:text-sm">{settings.name}</p>
-          <h1 className="mt-2 text-[34px] leading-[1.08] font-extrabold tracking-tight sm:text-5xl lg:text-[56px]">
+          <h1 className="mt-1.5 text-[32px] leading-[1.08] font-extrabold tracking-tight sm:text-5xl lg:text-[56px]">
             Fresh Chicken.
             <br />
             Honest Prices.
           </h1>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground md:mt-4 md:text-lg">
+          <p className="mt-2.5 max-w-md text-[15px] leading-relaxed text-muted-foreground md:mt-4 md:text-lg">
             Freshly prepared cuts, packed with care and delivered to your doorstep.
           </p>
         </div>
@@ -163,10 +163,10 @@ export default async function HomePage() {
 
       {/* How it works + trust */}
       <section className="py-6 md:py-10">
-        <div className="rounded-3xl bg-charcoal p-6 text-white md:p-10">
-          <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr] lg:items-center">
+        <div className="rounded-3xl bg-charcoal p-5 text-white sm:p-6 md:p-10">
+          <div className="grid gap-6 sm:gap-8 lg:grid-cols-[1fr_1.6fr] lg:items-center">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight md:text-3xl">Ordering takes a minute.</h2>
+              <h2 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-3xl">Ordering takes a minute.</h2>
               <ul className="mt-4 space-y-2 text-sm text-white/80">
                 {trust.map((label) => (
                   <li key={label} className="flex items-center gap-2">

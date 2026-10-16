@@ -255,10 +255,23 @@ export default function CheckoutPage() {
       await refresh();
       void api("/api/analytics", { method: "POST", body: { event: "payment_started", props: { order: data.order.number } } }).catch(() => undefined);
 
-      // Android/iOS WebView hides Razorpay UPI — open checkout in the system browser instead.
+      const payment = await api<{
+        keyId: string;
+        razorpayOrderId: string;
+        amount: number;
+        currency: string;
+        paymentToken?: string;
+      }>("/api/payment/create", {
+        method: "POST",
+        body: { orderId: data.order.id },
+      });
+
+      // Android/iOS WebView hides Razorpay UPI — open checkout in Chrome with a payment token
+      // (Custom Tabs don't share the app's login cookie).
       if (isNativeApp()) {
-        await openNativePayment(data.order.id);
-        const paid = await waitForNativePayment(data.order.id);
+        if (!payment.paymentToken) throw new ApiClientError("Payment could not be started. Please try again.");
+        await openNativePayment(data.order.id, payment.paymentToken);
+        const paid = await waitForNativePayment(data.order.id, payment.paymentToken);
         setAwaitingPayment(null);
         setBusy("");
         if (paid) {
@@ -270,10 +283,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      const payment = await api<{ keyId: string; razorpayOrderId: string; amount: number; currency: string }>("/api/payment/create", {
-        method: "POST",
-        body: { orderId: data.order.id },
-      });
       await loadRazorpay();
       if (!window.Razorpay) throw new ApiClientError("Payment could not be started. Please try again.");
       const checkout = new window.Razorpay(
@@ -357,12 +366,12 @@ export default function CheckoutPage() {
 
   if (busy === "placing" || busy === "paying" || awaitingPayment) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16 text-center">
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-12 text-center">
         <span className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
           <Loader2 className="size-8 animate-spin" aria-hidden />
         </span>
-        <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Waiting for confirmation</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h1 className="mt-5 text-[22px] font-extrabold tracking-tight sm:text-2xl">Waiting for confirmation</h1>
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {awaitingPayment
             ? `Complete payment for order #${awaitingPayment.number} in the Razorpay window. Don’t close this screen.`
             : "Placing your order…"}
@@ -390,18 +399,18 @@ export default function CheckoutPage() {
     step < 3 ? "Continue" : method === "cod" ? `Place order · ${formatINR(total)}` : `Pay ${formatINR(total)}`;
 
   return (
-    <div className="py-5 md:py-8">
+    <div className="py-4 md:py-8">
       <div className="flex items-center gap-2">
         {step > 0 ? (
-          <button type="button" onClick={back} className="-ml-2 grid size-10 place-items-center rounded-lg hover:bg-muted" aria-label="Back">
+          <button type="button" onClick={back} className="-ml-2 grid size-11 place-items-center rounded-xl hover:bg-muted" aria-label="Back">
             <ChevronLeft className="size-5" />
           </button>
         ) : (
-          <Link href="/cart" className="-ml-2 grid size-10 place-items-center rounded-lg hover:bg-muted" aria-label="Back to cart">
+          <Link href="/cart" className="-ml-2 grid size-11 place-items-center rounded-xl hover:bg-muted" aria-label="Back to cart">
             <ChevronLeft className="size-5" />
           </Link>
         )}
-        <h1 className="text-2xl font-extrabold tracking-tight md:text-[28px]">Checkout</h1>
+        <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[28px]">Checkout</h1>
       </div>
 
       <ol className="mt-4 grid grid-cols-4 gap-1.5" aria-label="Checkout progress">

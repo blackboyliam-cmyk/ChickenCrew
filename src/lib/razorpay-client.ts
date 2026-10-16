@@ -21,14 +21,14 @@ export function loadRazorpay() {
 }
 
 /** On Android/iOS, open payment in Chrome Custom Tabs so Razorpay shows UPI. */
-export async function openNativePayment(orderId: string) {
+export async function openNativePayment(orderId: string, paymentToken: string) {
   const { Browser } = await import("@capacitor/browser");
-  const url = `${window.location.origin}/pay/${orderId}`;
+  const url = `${window.location.origin}/pay/${orderId}?t=${encodeURIComponent(paymentToken)}`;
   await Browser.open({ url, presentationStyle: "popover" });
 }
 
 /** Poll until the customer finishes (or abandons) payment in the system browser. */
-export async function waitForNativePayment(orderId: string) {
+export async function waitForNativePayment(orderId: string, paymentToken: string) {
   const { App } = await import("@capacitor/app");
   const { Browser } = await import("@capacitor/browser");
 
@@ -54,7 +54,7 @@ export async function waitForNativePayment(orderId: string) {
         if (data.order.paymentStatus === "paid") await finish(true);
         if (data.order.paymentStatus === "failed") await finish(false);
       } catch {
-        /* keep waiting */
+        /* keep waiting — WebView still has the session cookie */
       }
     };
 
@@ -69,7 +69,10 @@ export async function waitForNativePayment(orderId: string) {
           if (data.order.paymentStatus === "paid") await finish(true);
           else {
             if (data.order.paymentStatus !== "failed") {
-              await api("/api/payment/abandon", { method: "POST", body: { orderId } }).catch(() => undefined);
+              await api("/api/payment/abandon", {
+                method: "POST",
+                body: { orderId, paymentToken },
+              }).catch(() => undefined);
             }
             await finish(false);
           }
@@ -121,16 +124,22 @@ export async function payExistingOrder(input: {
   phone: string;
   email: string;
 }) {
+  const payment = await api<{
+    keyId: string;
+    razorpayOrderId: string;
+    amount: number;
+    currency: string;
+    alreadyPaid?: boolean;
+    paymentToken?: string;
+  }>("/api/payment/create", { method: "POST", body: { orderId: input.orderId } });
+  if (payment.alreadyPaid) return true;
+
   if (isNativeApp()) {
-    await openNativePayment(input.orderId);
-    return waitForNativePayment(input.orderId);
+    if (!payment.paymentToken) throw new ApiClientError("Payment could not be started. Please try again.");
+    await openNativePayment(input.orderId, payment.paymentToken);
+    return waitForNativePayment(input.orderId, payment.paymentToken);
   }
 
-  const payment = await api<{ keyId: string; razorpayOrderId: string; amount: number; currency: string; alreadyPaid?: boolean }>(
-    "/api/payment/create",
-    { method: "POST", body: { orderId: input.orderId } },
-  );
-  if (payment.alreadyPaid) return true;
   await loadRazorpay();
   if (!window.Razorpay) throw new ApiClientError("Payment could not be started. Please try again.");
   return new Promise<boolean>((resolve, reject) => {

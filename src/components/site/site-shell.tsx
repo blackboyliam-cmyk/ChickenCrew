@@ -76,9 +76,11 @@ export function SiteShell({
 }
 
 function ShellInner({ admin, children }: { admin: boolean; children: React.ReactNode }) {
-  const { settings, offline } = useShop();
+  const { offline } = useShop();
+  const pathname = usePathname();
+  const hideChrome = pathname.startsWith("/pay/");
   return (
-    <div className="flex min-h-screen flex-col overflow-x-clip">
+    <div className="flex min-h-dvh flex-col overflow-x-clip">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded-lg focus:bg-card focus:px-3 focus:py-2 focus:shadow-raised"
@@ -96,22 +98,32 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
           </Link>
         </div>
       )}
-      {!admin && <InstallBanner appName="Karthika Chicken" />}
-      <Header />
+      {!admin && !hideChrome && <InstallBanner appName="Karthika Chicken" />}
+      {!hideChrome && <Header />}
       {offline && (
         <p className="bg-charcoal px-4 py-2 text-center text-sm text-white" role="status">
           You&apos;re offline. Prices may be out of date.
         </p>
       )}
-      <main id="main" className="mx-auto w-full max-w-[1320px] flex-1 px-4 pb-36 md:px-6 md:pb-16">
+      <main
+        id="main"
+        className={cn(
+          "mx-auto w-full max-w-[1320px] flex-1 px-4 md:px-6",
+          hideChrome ? "pb-8" : "pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-16",
+        )}
+      >
         {children}
       </main>
-      <Footer />
-      <SearchPanel />
-      <LocationDialog />
-      <MealAssistant />
-      <MobileCartBar />
-      <BottomNav />
+      {!hideChrome && (
+        <>
+          <Footer />
+          <SearchPanel />
+          <LocationDialog />
+          <MealAssistant />
+          <MobileCartBar />
+          <BottomNav />
+        </>
+      )}
     </div>
   );
 }
@@ -528,7 +540,7 @@ function SearchPanel() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         showCloseButton={false}
-        className="top-0 h-dvh max-w-none translate-y-0 content-start gap-0 rounded-none p-0 sm:top-[10vh] sm:h-auto sm:max-w-xl sm:rounded-2xl"
+        className="top-0 h-dvh max-w-none translate-y-0 content-start gap-0 rounded-none p-0 pt-[env(safe-area-inset-top)] sm:top-[10vh] sm:h-auto sm:max-w-xl sm:rounded-2xl sm:pt-0"
       >
         <DialogTitle className="sr-only">Search</DialogTitle>
         <form
@@ -676,8 +688,36 @@ function Footer() {
   ].filter(Boolean) as string[];
 
   return (
-    <footer className="mt-8 bg-charcoal pb-32 text-white/70 md:pb-0">
-      <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-12 sm:grid-cols-2 md:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <footer className="mt-6 bg-charcoal text-white/70 md:mt-8">
+      {/* Compact mobile footer — full link grid is desktop-only so phones stay scannable */}
+      <div className="mx-auto max-w-[1320px] px-4 py-6 md:hidden">
+        <p className="font-[family-name:var(--font-plus-jakarta)] text-base font-extrabold text-white">
+          Chicken<span className="text-[#f87171]">Crew</span>
+        </p>
+        <p className="mt-1 text-xs">by {settings.name}</p>
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <Link className="hover:text-white" href="/contact">
+            Contact
+          </Link>
+          <Link className="hover:text-white" href="/faq">
+            FAQ
+          </Link>
+          <Link className="hover:text-white" href="/legal/privacy">
+            Privacy
+          </Link>
+          <Link className="hover:text-white" href="/legal/terms">
+            Terms
+          </Link>
+          {settings.phone && (
+            <a className="hover:text-white" href={`tel:${settings.phone}`}>
+              Call shop
+            </a>
+          )}
+        </div>
+        <p className="mt-5 text-[11px] text-white/45">© {year} {settings.name}</p>
+      </div>
+
+      <div className="mx-auto hidden max-w-[1320px] gap-8 px-4 py-12 md:grid md:grid-cols-2 md:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="max-w-xs">
           <p className="font-[family-name:var(--font-plus-jakarta)] text-lg font-extrabold text-white">
             Chicken<span className="text-[#f87171]">Crew</span>
@@ -747,7 +787,7 @@ function Footer() {
           ]}
         />
       </div>
-      <div className="border-t border-white/10">
+      <div className="hidden border-t border-white/10 md:block">
         <div className="mx-auto flex max-w-[1320px] flex-col gap-3 px-4 py-5 text-xs sm:flex-row sm:items-center sm:justify-between md:px-6">
           <p>© {year} {settings.name}</p>
           {payments.length > 0 && (
@@ -784,7 +824,7 @@ function FooterList({ title, links }: { title: string; links: [string, string][]
 
 /* --------------------------------------------------------- Mobile chrome */
 
-const HIDE_CART_BAR = ["/cart", "/checkout", "/product/", "/orders/", "/login"];
+const HIDE_CART_BAR = ["/cart", "/checkout", "/product/", "/orders/", "/login", "/pay/"];
 
 function MobileCartBar() {
   const { cart } = useShop();
@@ -819,6 +859,7 @@ function MobileCartBar() {
 
 function BottomNav() {
   const pathname = usePathname();
+  if (pathname.startsWith("/pay/")) return null;
   const items = [
     { href: "/", label: "Home", icon: Home },
     { href: "/shop", label: "Shop", icon: Store },
@@ -839,7 +880,7 @@ function BottomNav() {
               ? pathname === "/account" || (pathname.startsWith("/account/") && !pathname.startsWith("/account/orders"))
               : item.href !== "#search" && isActive(pathname, item.href);
           const classes = cn(
-            "relative flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+            "relative flex h-[3.75rem] w-full flex-col items-center justify-center gap-0.5 text-[10px] font-semibold tracking-wide transition-colors",
             active ? "text-primary" : "text-muted-foreground",
           );
           return (

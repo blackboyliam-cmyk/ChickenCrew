@@ -17,17 +17,17 @@ export default async function FaqPage() {
     <div className="pb-6">
       <PageHero eyebrow="Help centre" title="Frequently asked questions" body="Ordering, delivery, payments and freshness, answered." />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="mt-6 grid gap-5 sm:mt-8 sm:gap-6 lg:grid-cols-[1fr_300px]">
         <Accordion type="single" collapsible className="space-y-2.5">
           {faqs.map((faq, index) => (
-            <AccordionItem key={faq.q} value={`q-${index}`} className="rounded-2xl border bg-white px-5 shadow-card last:border-b">
-              <AccordionTrigger className="py-4 text-left text-[15px] font-bold hover:no-underline">{faq.q}</AccordionTrigger>
+            <AccordionItem key={faq.q} value={`q-${index}`} className="rounded-2xl border bg-white px-4 shadow-card last:border-b sm:px-5">
+              <AccordionTrigger className="py-3.5 text-left text-[15px] font-bold hover:no-underline sm:py-4">{faq.q}</AccordionTrigger>
               <AccordionContent className="pb-4 text-sm leading-relaxed text-muted-foreground">{faq.a}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
 
-        <aside className="h-fit rounded-2xl bg-charcoal p-6 text-white lg:sticky lg:top-24">
+        <aside className="h-fit rounded-2xl bg-charcoal p-5 text-white sm:p-6 lg:sticky lg:top-24">
           <span className="grid size-11 place-items-center rounded-xl bg-white/10">
             <MessageCircle className="size-5" />
           </span>

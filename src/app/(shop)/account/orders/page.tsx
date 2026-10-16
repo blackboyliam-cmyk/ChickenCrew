@@ -76,7 +76,7 @@ export default function OrdersPage() {
   return (
     <div>
       <h2 className="text-lg font-bold">Orders</h2>
-      <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist" aria-label="Filter orders">
+      <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 md:mx-0 md:px-0" role="tablist" aria-label="Filter orders">
         {FILTERS.map((item) => (
           <button
             key={item}
@@ -84,7 +84,7 @@ export default function OrdersPage() {
             role="tab"
             aria-selected={filter === item}
             className={cn(
-              "h-10 shrink-0 rounded-lg border px-4 text-sm font-medium capitalize transition-colors",
+              "h-11 shrink-0 rounded-xl border px-4 text-sm font-semibold capitalize transition-colors",
               filter === item ? "border-charcoal bg-charcoal text-white" : "bg-card hover:border-foreground/30",
             )}
             onClick={() => setFilter(item)}

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 export default async function CategoriesPage() {
   const categories = (await withDb(listCategories)).filter((c) => c.slug !== "offers");
   return (
-    <div className="pt-5 md:pt-8">
-      <h1 className="text-2xl font-extrabold tracking-tight md:text-[32px]">Shop by Cut</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Pick a cut to see every weight and price.</p>
+    <div className="pt-4 md:pt-8">
+      <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl md:text-[32px]">Shop by Cut</h1>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Pick a cut to see every weight and price.</p>
       {categories.length === 0 ? (
         <EmptyState className="mt-6" title="No categories yet" body="The shop hasn't published its categories." />
       ) : (
