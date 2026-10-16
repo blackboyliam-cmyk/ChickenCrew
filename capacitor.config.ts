@@ -27,8 +27,10 @@ const config: CapacitorConfig = {
       launchShowDuration: 1200,
     },
     StatusBar: {
-      style: "DARK",
-      backgroundColor: "#8C2433",
+      // Keep the system clock/battery out of the header area.
+      overlaysWebView: false,
+      style: "LIGHT",
+      backgroundColor: "#ffffff",
     },
   },
   android: {

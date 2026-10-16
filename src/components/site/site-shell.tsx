@@ -134,7 +134,7 @@ function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm transition-shadow duration-200 supports-[backdrop-filter]:bg-card/90",
+        "sticky top-0 z-40 border-b bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur-sm transition-shadow duration-200 supports-[backdrop-filter]:bg-card/90",
         scrolled ? "border-border shadow-raised" : "border-transparent",
       )}
     >

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
+import { NativeChrome } from "@/components/native-chrome";
 import { SplashScreen } from "@/components/splash-screen";
 import { Toaster } from "@/components/ui/sonner";
 import "@fontsource-variable/inter";
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" forcedTheme="light" defaultTheme="light">
+          <NativeChrome />
           <SplashScreen />
           {children}
           <Toaster position="top-center" />
