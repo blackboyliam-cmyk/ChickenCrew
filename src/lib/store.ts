@@ -1349,6 +1349,25 @@ export function markPaymentFailed(razorpayOrderId: string) {
   });
 }
 
+/** Customer closed Razorpay without paying — mark the pending order as failed. */
+export function abandonPendingPayment(userId: string, orderId: string) {
+  return update((db) => {
+    const order = db.orders.find((item) => item.id === orderId && item.userId === userId);
+    if (!order) throw new ApiError(404, "We could not find that order.");
+    if (order.paymentStatus === "paid") return publicOrder(order);
+    if (order.status !== "pending_payment" && order.paymentMethod !== "razorpay") {
+      throw new ApiError(409, "This order is not waiting for payment.");
+    }
+    order.paymentStatus = "failed";
+    order.updatedAt = new Date().toISOString();
+    if (order.razorpayOrderId) {
+      const payment = db.payments.find((item) => item.razorpayOrderId === order.razorpayOrderId);
+      if (payment && payment.status !== "paid") payment.status = "failed";
+    }
+    return publicOrder(order);
+  });
+}
+
 export function recordAnalytics(event: string, props: Record<string, unknown>) {
   if (!ANALYTICS_EVENTS.includes(event as AnalyticsEventName)) {
     throw new ApiError(400, "Unknown event.");

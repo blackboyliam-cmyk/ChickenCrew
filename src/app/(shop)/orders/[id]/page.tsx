@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { BellRing, CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
 import { OrderTracking } from "@/components/site/order-tracking";
 import { ErrorState, ListSkeleton } from "@/components/site/states";
@@ -49,6 +49,7 @@ function alertMessage(order: Order, shopName: string, origin: string) {
 export default function OrderPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
+  const router = useRouter();
   const { refresh, settings, user } = useShop();
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
@@ -100,7 +101,13 @@ export default function OrderPage() {
         phone: order.address.phone,
         email: user?.email || "",
       });
-      if (paid) await load();
+      if (paid) {
+        router.replace(`/orders/${order.id}?placed=1`);
+        await load();
+      } else {
+        router.replace(`/orders/${order.id}?failed=1`);
+        await load();
+      }
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Payment could not be started. Please try again.");
     } finally {
@@ -139,9 +146,11 @@ export default function OrderPage() {
 
   const current = STEPS.findIndex(([status]) => status === order.status);
   const placed = search.get("placed") === "1";
+  const paymentFailed = search.get("failed") === "1" || order.paymentStatus === "failed";
   const cancelled = order.status === "cancelled";
   const pending = order.status === "pending_payment";
-  const showSuccess = placed && !cancelled && !pending;
+  const showSuccess = placed && !cancelled && !pending && !paymentFailed;
+  const showFailed = paymentFailed && !cancelled && order.paymentStatus !== "paid";
   const canCancel = ["placed", "confirmed", "pending_payment"].includes(order.status);
   const address = order.address;
   const shopWhatsapp = settings.whatsapp || settings.phone;
@@ -150,7 +159,37 @@ export default function OrderPage() {
 
   return (
     <div className="mx-auto max-w-3xl py-6 md:py-10">
-      {showSuccess ? (
+      {showFailed ? (
+        <div className="flex flex-col items-center rounded-3xl border bg-card px-6 py-10 text-center">
+          <span className="grid size-16 animate-pop place-items-center rounded-full bg-destructive/10 text-destructive">
+            <XCircle className="size-8" strokeWidth={2.5} aria-hidden />
+          </span>
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight md:text-3xl">Order failed</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Order #{order.number}</p>
+          <p className="mt-3 max-w-sm text-[15px] text-muted-foreground">
+            Payment was cancelled or didn’t go through. You can try again — your order is still saved.
+          </p>
+          <div className="mt-6 grid w-full max-w-sm grid-cols-1 gap-2 sm:grid-cols-2">
+            {order.paymentMethod === "razorpay" && (
+              <button
+                type="button"
+                disabled={busy !== ""}
+                onClick={() => void pay()}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary-dark disabled:opacity-60"
+              >
+                {busy === "pay" ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+                Try payment again
+              </button>
+            )}
+            <Link
+              href="/shop"
+              className="inline-flex h-12 items-center justify-center rounded-xl border text-sm font-bold tracking-wide uppercase hover:bg-muted"
+            >
+              Back to shop
+            </Link>
+          </div>
+        </div>
+      ) : showSuccess ? (
         <div className="flex flex-col items-center rounded-3xl border bg-card px-6 py-10 text-center">
           <span className="grid size-16 animate-pop place-items-center rounded-full bg-success text-white">
             <Check className="size-8" strokeWidth={3} aria-hidden />

@@ -69,6 +69,8 @@ export default function CheckoutPage() {
   const [couponBusy, setCouponBusy] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"" | "placing" | "paying">("");
+  /** Kept while Razorpay is open so checkout doesn't flash "cart is empty" after the order clears the cart. */
+  const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; number: string } | null>(null);
   const [form, setForm] = useState<AddressForm>({
     name: "",
     email: "",
@@ -241,13 +243,15 @@ export default function CheckoutPage() {
           idempotencyKey: idempotencyKey.current,
         },
       });
-      await refresh();
       if (method === "cod") {
+        await refresh();
         void api("/api/analytics", { method: "POST", body: { event: "purchase", props: { order: data.order.number, total: data.order.total } } }).catch(() => undefined);
         router.push(`/orders/${data.order.id}?placed=1`);
         return;
       }
+      setAwaitingPayment({ id: data.order.id, number: data.order.number });
       setBusy("paying");
+      await refresh();
       void api("/api/analytics", { method: "POST", body: { event: "payment_started", props: { order: data.order.number } } }).catch(() => undefined);
       const payment = await api<{ keyId: string; razorpayOrderId: string; amount: number; currency: string }>("/api/payment/create", {
         method: "POST",
@@ -272,22 +276,28 @@ export default function CheckoutPage() {
               body: { orderId: data.order.id, ...response },
             });
             void api("/api/analytics", { method: "POST", body: { event: "purchase", props: { order: verified.order.number, total: verified.order.total } } }).catch(() => undefined);
+            setAwaitingPayment(null);
             router.push(`/orders/${verified.order.id}?placed=1`);
           } catch (err) {
             setBusy("");
+            setAwaitingPayment(null);
             setError(err instanceof ApiClientError ? err.message : "We couldn't confirm the payment. Check your order page before paying again.");
+            router.push(`/orders/${data.order.id}?failed=1`);
           }
         },
         modal: {
           ondismiss: () => {
+            void api("/api/payment/abandon", { method: "POST", body: { orderId: data.order.id } }).catch(() => undefined);
             setBusy("");
-            setError("Payment cancelled. You can try again.");
+            setAwaitingPayment(null);
+            router.push(`/orders/${data.order.id}?failed=1`);
           },
         },
       });
       checkout.open();
     } catch (err) {
       setBusy("");
+      setAwaitingPayment(null);
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
       idempotencyKey.current = crypto.randomUUID();
     }
@@ -324,6 +334,22 @@ export default function CheckoutPage() {
           <GoogleButton next="/checkout" />
           <OtpForm onDone={() => void refreshUser()} submitLabel="Continue to checkout" />
         </div>
+      </div>
+    );
+  }
+
+  if (busy === "placing" || busy === "paying" || awaitingPayment) {
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16 text-center">
+        <span className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
+          <Loader2 className="size-8 animate-spin" aria-hidden />
+        </span>
+        <h1 className="mt-5 text-2xl font-extrabold tracking-tight">Waiting for confirmation</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {awaitingPayment
+            ? `Complete payment for order #${awaitingPayment.number} in the Razorpay window. Don’t close this screen.`
+            : "Placing your order…"}
+        </p>
       </div>
     );
   }

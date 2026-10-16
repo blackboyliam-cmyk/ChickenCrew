@@ -41,7 +41,12 @@ export async function payExistingOrder(input: { orderId: string; number: string;
       handler: (response: RazorpayResponse) => {
         api("/api/payment/verify", { method: "POST", body: { orderId: input.orderId, ...response } }).then(() => resolve(true), reject);
       },
-      modal: { ondismiss: () => resolve(false) },
+      modal: {
+        ondismiss: () => {
+          void api("/api/payment/abandon", { method: "POST", body: { orderId: input.orderId } }).catch(() => undefined);
+          resolve(false);
+        },
+      },
     });
     checkout.open();
   });
