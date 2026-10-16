@@ -370,7 +370,7 @@ export default function CheckoutPage() {
   const showForm = adding || addresses.length === 0;
   const activeGroup = groups?.find((group) => group.date === day);
   const actionLabel =
-    step < 3 ? "Continue" : busy === "paying" ? "Processing payment…" : busy === "placing" ? "Placing order…" : method === "cod" ? `Place order · ${formatINR(total)}` : `Pay ${formatINR(total)}`;
+    step < 3 ? "Continue" : method === "cod" ? `Place order · ${formatINR(total)}` : `Pay ${formatINR(total)}`;
 
   return (
     <div className="py-5 md:py-8">
