@@ -78,7 +78,11 @@ export function MapPicker({
           </button>
         )}
         {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
-        <p className="mt-2 text-xs text-muted-foreground">Helps the rider find your door. Optional.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {MAPS_KEY
+            ? "Map couldn’t load in this app (usually the Google API key website restrictions). You can still pin with GPS."
+            : "Helps the rider find your door. Optional."}
+        </p>
       </div>
     );
   }

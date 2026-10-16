@@ -57,7 +57,17 @@ function bootstrap(): Promise<void> {
         authFailed = true;
         authListeners.forEach((listener) => listener());
       };
-      const params = new URLSearchParams({ key: MAPS_KEY, v: "weekly", loading: "async", callback: "__ccMapsReady", region: "IN", language: "en" });
+      // auth_referrer_policy=origin helps Capacitor/Android WebView, which often
+      // sends only the origin (or a stripped referrer) instead of a full page URL.
+      const params = new URLSearchParams({
+        key: MAPS_KEY,
+        v: "weekly",
+        loading: "async",
+        callback: "__ccMapsReady",
+        region: "IN",
+        language: "en",
+        auth_referrer_policy: "origin",
+      });
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?${params}`;
       script.async = true;
