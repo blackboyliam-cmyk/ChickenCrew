@@ -1671,12 +1671,15 @@ export function adminDeleteOrder(id: string) {
   return update((db) => {
     const order = db.orders.find((item) => item.id === id);
     if (!order) throw new ApiError(404, "We could not find that order.");
-    if (order.status !== "delivered") throw new ApiError(400, "Only delivered orders can be deleted.");
-    if (order.collection && !order.collection.settledAt) {
+    if (order.status !== "delivered" && order.status !== "cancelled") {
+      throw new ApiError(400, "Only delivered or cancelled orders can be deleted.");
+    }
+    if (order.status === "delivered" && order.collection && !order.collection.settledAt) {
       throw new ApiError(400, "The rider hasn't handed over this order's cash yet. Settle it on the Riders page first.");
     }
     db.orders = db.orders.filter((item) => item.id !== id);
     if (order.razorpayOrderId) db.payments = db.payments.filter((payment) => payment.razorpayOrderId !== order.razorpayOrderId);
+    db.reviews = (db.reviews || []).filter((review) => review.orderId !== id);
     return { ok: true };
   });
 }

@@ -357,13 +357,20 @@ function OrdersView() {
                               <Printer className="size-3.5" /> Receipt
                             </Link>
                           </Button>
-                          {order.status === "delivered" && (
+                          {(order.status === "delivered" || order.status === "cancelled") && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="rounded-lg text-destructive hover:text-destructive"
-                              disabled={busy === order.id || (order.collection !== null && !order.collection.settledAt)}
-                              title={order.collection && !order.collection.settledAt ? "Settle the rider's cash first" : undefined}
+                              disabled={
+                                busy === order.id ||
+                                (order.status === "delivered" && order.collection !== null && !order.collection.settledAt)
+                              }
+                              title={
+                                order.status === "delivered" && order.collection && !order.collection.settledAt
+                                  ? "Settle the rider's cash first"
+                                  : undefined
+                              }
                               onClick={() => void remove(order)}
                             >
                               <Trash2 className="size-3.5" /> Delete order
