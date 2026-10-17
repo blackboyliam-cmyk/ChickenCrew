@@ -47,9 +47,10 @@ export function createSeed(): DB {
     category("cat_wings", "chicken-wings", "Chicken Wings", "/media/wings.jpg", "Raw chicken wings", 6),
     category("cat_liver", "liver", "Liver", "/media/liver.jpg", "Chicken liver in a steel bowl", 7),
     category("cat_gizzard", "gizzard", "Gizzard", "/media/gizzard.jpg", "Chicken gizzard in a steel bowl", 8),
-    category("cat_special", "special-cuts", "Special Cuts", "/media/wings.jpg", "Raw chicken wings for special cuts", 9),
-    category("cat_combos", "combos", "Combos", "/media/curry.jpg", "Raw curry-cut chicken for a family pack", 10),
-    category("cat_offers", "offers", "Offers", "/media/curry.jpg", "Chicken pieces on offer", 11),
+    eggsCategory(),
+    category("cat_special", "special-cuts", "Special Cuts", "/media/wings.jpg", "Raw chicken wings for special cuts", 10),
+    category("cat_combos", "combos", "Combos", "/media/curry.jpg", "Raw curry-cut chicken for a family pack", 11),
+    category("cat_offers", "offers", "Offers", "/media/curry.jpg", "Chicken pieces on offer", 12),
   ];
 
   const products: Product[] = [
@@ -214,6 +215,7 @@ export function createSeed(): DB {
       variants: [variant("var_family_1", "1.25 kg", "KCC-FAM-125", 299, 339, 10)],
       createdAt: "2026-09-11T04:00:00.000Z",
     }),
+    eggsProduct(),
   ];
 
   const offers: Offer[] = [
@@ -339,11 +341,39 @@ function product(input: {
   images: Product["images"];
   variants: Variant[];
   createdAt: string;
+  storage?: string;
+  preparation?: string;
 }): Product {
   return {
     ...input,
-    storage: "Refrigerate as soon as it arrives. Cook the same day.",
-    preparation: "Cook until the meat is fully done.",
+    storage: input.storage || "Refrigerate as soon as it arrives. Cook the same day.",
+    preparation: input.preparation || "Cook until the meat is fully done.",
     active: true,
   };
+}
+
+/** Shared eggs catalogue so existing shops can pick it up without a full reseed. */
+export function eggsCategory(): Category {
+  return category("cat_eggs", "eggs", "Eggs", "/media/eggs.svg", "Fresh farm eggs", 9);
+}
+
+export function eggsProduct(): Product {
+  return product({
+    id: "prd_eggs",
+    slug: "farm-fresh-eggs",
+    name: "Farm Fresh Eggs",
+    categoryId: "cat_eggs",
+    featured: true,
+    description: "Fresh farm eggs for everyday cooking. Sold by the tray.",
+    details: "Farm fresh eggs. Packed carefully for delivery.",
+    storage: "Keep refrigerated. Use within a week of delivery.",
+    preparation: "Cook until the white and yolk are done to your liking.",
+    images: [{ url: "/media/eggs.svg", alt: "Fresh farm eggs" }],
+    variants: [
+      variant("var_eggs_6", "6 pcs", "KCC-EGG-6", 42, 48, 40),
+      variant("var_eggs_12", "1 dozen", "KCC-EGG-12", 78, 85, 50),
+      variant("var_eggs_30", "30 pcs", "KCC-EGG-30", 190, 210, 25),
+    ],
+    createdAt: "2026-10-17T04:00:00.000Z",
+  });
 }

@@ -91,6 +91,16 @@ export function IconDefaultCut({ className }: IconProps) {
   );
 }
 
+export function IconEggs({ className }: IconProps) {
+  return (
+    <Frame className={className}>
+      <ellipse cx="28" cy="44" rx="12" ry="16" {...s} />
+      <ellipse cx="44" cy="38" rx="14" ry="18" {...s} />
+      <ellipse cx="58" cy="46" rx="11" ry="15" {...s} />
+    </Frame>
+  );
+}
+
 const SVG_ICON: Record<string, ComponentType<IconProps>> = {
   "chicken-legs": IconLegs,
   "chicken-lollipop": IconLegs,
@@ -98,6 +108,8 @@ const SVG_ICON: Record<string, ComponentType<IconProps>> = {
   liver: IconLiver,
   "chicken-gizzard": IconGizzard,
   gizzard: IconGizzard,
+  eggs: IconEggs,
+  "farm-fresh-eggs": IconEggs,
   "special-cuts": IconSpecial,
   combos: IconCombo,
   "family-curry-pack": IconCombo,

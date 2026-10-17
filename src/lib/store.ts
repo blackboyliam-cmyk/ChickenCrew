@@ -14,6 +14,7 @@ import {
 import { pushConfigured, pushPublicKey, sendPush, type PushMessage } from "./push";
 import { formatINR, rupeesToPaise } from "./money";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
+import { eggsCategory, eggsProduct } from "./seed";
 import { parseGrams } from "./weights";
 import {
   addDaysKey,
@@ -85,9 +86,10 @@ export async function withDb<T>(fn: () => T | Promise<T>): Promise<T> {
   if (requestDb.getStore()) return fn();
   for (let attempt = 0; attempt < SAVE_ATTEMPTS; attempt += 1) {
     const snapshot = await loadSnapshot();
+    const normalized = normalizeDb(snapshot.db);
     const scope: RequestDb = {
-      db: normalizeDb(snapshot.db),
-      dirty: false,
+      db: normalized.db,
+      dirty: normalized.changed,
       checked: false,
       events: [],
       afterSave: [],
@@ -167,7 +169,8 @@ function currentScope(): RequestDb {
   return scope;
 }
 
-function normalizeDb(db: DB): DB {
+function normalizeDb(db: DB): { db: DB; changed: boolean } {
+  let changed = false;
   if (!db.schemaVersion) db.schemaVersion = 1;
   db.bookings ||= [];
   db.payments ||= [];
@@ -188,7 +191,25 @@ function normalizeDb(db: DB): DB {
   for (const user of db.users) {
     user.emailVerified ??= Boolean(user.googleId && user.email);
   }
-  return db;
+  // Add eggs to shops that started before the eggs catalogue existed.
+  if (!db.categories.some((item) => item.id === "cat_eggs")) {
+    db.categories.push(eggsCategory());
+    changed = true;
+  }
+  if (!db.products.some((item) => item.id === "prd_eggs")) {
+    db.products.push(eggsProduct());
+    changed = true;
+  } else {
+    const eggs = db.products.find((item) => item.id === "prd_eggs");
+    const dozen = eggs?.variants.find((item) => item.id === "var_eggs_12");
+    if (dozen && (dozen.price !== 7800 || dozen.label !== "1 dozen")) {
+      dozen.label = "1 dozen";
+      dozen.price = 7800;
+      dozen.mrp = Math.max(dozen.mrp, 8500);
+      changed = true;
+    }
+  }
+  return { db, changed };
 }
 
 function readDb(): DB {
