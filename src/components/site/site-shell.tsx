@@ -88,19 +88,23 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
       >
         Skip to content
       </a>
-      {admin && (
-        <div className="flex items-center justify-between gap-3 bg-charcoal px-4 py-2 text-xs text-white/85 sm:text-sm">
-          <span className="min-w-0 truncate">You&apos;re viewing the shop as admin</span>
-          <Link
-            href="/admin"
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1 font-bold text-charcoal hover:bg-white/90"
-          >
-            <ArrowLeft className="size-3.5" /> Back to admin
-          </Link>
+      {!admin && !hideChrome && <InstallBanner appName="Karthika Chicken" />}
+      {(admin || !hideChrome) && (
+        <div className="sticky top-0 z-40">
+          {admin && (
+            <div className="flex items-center justify-between gap-3 bg-charcoal px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-xs text-white/85 sm:text-sm">
+              <span className="min-w-0 truncate">You&apos;re viewing the shop as admin</span>
+              <Link
+                href="/admin"
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-bold text-charcoal hover:bg-white/90"
+              >
+                <ArrowLeft className="size-3.5" /> Back to admin
+              </Link>
+            </div>
+          )}
+          {!hideChrome && <Header safeAreaTop={!admin} />}
         </div>
       )}
-      {!admin && !hideChrome && <InstallBanner appName="Karthika Chicken" />}
-      {!hideChrome && <Header />}
       {offline && (
         <p className="bg-charcoal px-4 py-2 text-center text-sm text-white" role="status">
           You&apos;re offline. Prices may be out of date.
@@ -133,7 +137,7 @@ function ShellInner({ admin, children }: { admin: boolean; children: React.React
 
 /* ------------------------------------------------------------------ Header */
 
-function Header() {
+function Header({ safeAreaTop = true }: { safeAreaTop?: boolean }) {
   const { cart, user } = useShop();
   const pathname = usePathname();
   const next = useNextSlot();
@@ -149,7 +153,8 @@ function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur-sm transition-shadow duration-200 supports-[backdrop-filter]:bg-card/90",
+        "border-b bg-card/95 backdrop-blur-sm transition-shadow duration-200 supports-[backdrop-filter]:bg-card/90",
+        safeAreaTop && "pt-[env(safe-area-inset-top)]",
         scrolled ? "border-border shadow-raised" : "border-transparent",
       )}
     >
