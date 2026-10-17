@@ -1,14 +1,14 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://karthikachickencentre.shop";
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api", "/account", "/checkout", "/cart"],
+      disallow: ["/admin", "/api", "/account", "/checkout", "/cart", "/rider", "/bill", "/orders"],
     },
-    sitemap: `${site}/sitemap.xml`,
-    host: site,
+    sitemap: `${siteUrl()}/sitemap.xml`,
+    host: siteUrl(),
   };
 }

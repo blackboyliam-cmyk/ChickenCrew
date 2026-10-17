@@ -7,9 +7,8 @@ import { ProductGallery } from "@/components/site/product-gallery";
 import { PurchasePanel } from "@/components/site/purchase-panel";
 import { SectionHeader } from "@/components/site/states";
 import { ApiError } from "@/lib/errors";
+import { absoluteUrl } from "@/lib/seo";
 import { getProduct, withDb } from "@/lib/store";
-
-const SITE = "https://karthikachickencentre.shop";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -52,10 +51,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ["Storage", product.storage],
   ].filter(([, body]) => body) as [string, string][];
 
+  const productUrl = absoluteUrl(`/product/${product.slug}`);
   const crumbs = [
-    { name: "Home", item: `${SITE}/` },
-    ...(product.category ? [{ name: product.category.name, item: `${SITE}/category/${product.category.slug}` }] : []),
-    { name: product.name, item: `${SITE}/product/${product.slug}` },
+    { name: "Home", item: absoluteUrl("/") },
+    ...(product.category
+      ? [{ name: product.category.name, item: absoluteUrl(`/category/${product.category.slug}`) }]
+      : []),
+    { name: product.name, item: productUrl },
   ];
 
   return (
@@ -66,11 +68,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           "@type": "Product",
           name: product.name,
           description: product.description,
+          url: productUrl,
           image: product.images.map((image) => image.url),
           sku: product.variants[0]?.sku,
           brand: { "@type": "Brand", name: "Karthika Chicken Centre" },
           offers: {
             "@type": "Offer",
+            url: productUrl,
             priceCurrency: "INR",
             price: (low / 100).toFixed(2),
             availability: product.variants.some((variant) => variant.inStock)

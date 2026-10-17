@@ -10,6 +10,7 @@ import { ReorderBanner } from "@/components/site/reorder-banner";
 import { EmptyState, SectionHeader } from "@/components/site/states";
 import { JsonLd } from "@/components/site/json-ld";
 import { formatINR } from "@/lib/money";
+import { localBusinessJsonLd } from "@/lib/seo";
 import { getHome, listProducts, withDb } from "@/lib/store";
 
 export default async function HomePage() {
@@ -27,28 +28,9 @@ export default async function HomePage() {
     settings.onlineReady ? "Secure online payments" : settings.codEnabled ? "Cash on delivery" : null,
   ].filter(Boolean) as string[];
 
-  const business: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: settings.name,
-    url: "https://karthikachickencentre.shop",
-    brand: settings.brand,
-  };
-  if (settings.phone) business.telephone = settings.phone;
-  if (settings.city) {
-    business.address = {
-      "@type": "PostalAddress",
-      streetAddress: [settings.addressLine, settings.area].filter(Boolean).join(", "),
-      addressLocality: settings.city,
-      addressRegion: settings.state,
-      postalCode: settings.pincode,
-      addressCountry: "IN",
-    };
-  }
-
   return (
     <>
-      <JsonLd data={business} />
+      <JsonLd data={localBusinessJsonLd(settings)} />
 
       {/* Hero */}
       <section className="grid items-center gap-x-12 gap-y-4 pt-4 pb-6 md:gap-y-5 md:pt-10 md:pb-14 lg:grid-cols-[1fr_1.05fr]">

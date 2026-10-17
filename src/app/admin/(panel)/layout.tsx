@@ -5,9 +5,16 @@ import { OrderAlerts } from "@/components/admin/order-alerts";
 import { isAdmin } from "@/lib/auth";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   manifest: "/admin.webmanifest",
   appleWebApp: { capable: true, title: "KCC Admin", statusBarStyle: "default" },
-  icons: { apple: "/icon-192.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
