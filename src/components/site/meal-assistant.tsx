@@ -126,7 +126,9 @@ export function MealAssistant() {
           <p className="text-sm font-semibold">What are you making?</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {name ? `${name} is in your cart. ` : ""}
-            {prompted ? "Get ideas, or close this — we won't ask again." : "Tell us the dish and we'll suggest cuts."}
+            {prompted
+              ? "Get a step-by-step recipe, or close this — we won't ask again."
+              : "Tell us the dish for a recipe and cut suggestions."}
           </p>
         </div>
         <Button type="button" variant="ghost" size="icon" aria-label="Close cooking ideas" onClick={() => setOpen(false)}>
@@ -175,7 +177,7 @@ export function MealAssistant() {
           {error}
         </p>
       )}
-      {reply && <p className="mt-3 text-sm leading-6">{reply}</p>}
+      {reply && <p className="mt-3 whitespace-pre-wrap text-sm leading-6">{reply}</p>}
       {suggestions.length > 0 && (
         <ul className="mt-3 space-y-2">
           {suggestions.map((item) => (

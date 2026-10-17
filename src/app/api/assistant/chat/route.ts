@@ -12,7 +12,7 @@ function fallbackReply(message: string, mode: Mode, item: string): { reply: stri
   const lower = message.toLowerCase();
   if (mode === "gym") {
     return {
-      reply: `For a high-protein plate with ${item}, lean cuts are the simple choice. Grill or boil with little oil. This is general food inspiration, not medical advice.`,
+      reply: `High-protein plate with ${item} (about 150–200 g cooked chicken per person).\n\n1. Marinate lean pieces with salt, pepper, chilli, and a little oil for 15 minutes.\n2. Grill or pan-sear on medium-high until cooked through (no pink inside).\n3. Rest 2 minutes, slice, and plate with dal or salad.\n\nGeneral food inspiration, not medical advice.`,
       suggestions: [
         { label: "Chicken breast", searchQuery: "chicken breast", reason: "Lean and high protein" },
         { label: "Boneless", searchQuery: "boneless", reason: "Easy to portion" },
@@ -22,7 +22,7 @@ function fallbackReply(message: string, mode: Mode, item: string): { reply: stri
   }
   if (lower.includes("curry")) {
     return {
-      reply: `Chicken curry with ${item} works well with curry cut or legs. Add another pack if the pot needs more.`,
+      reply: `Chicken curry with ${item} — about 250 g per person.\n\n1. Heat oil, fry onion until soft, then ginger-garlic paste.\n2. Add chilli, turmeric, coriander, and salt; cook 1 minute.\n3. Add chicken and sear until the colour changes.\n4. Pour in tomato or a little water, cover, and simmer 20–25 minutes until tender.\n5. Finish with garam masala and coriander leaves.`,
       suggestions: [
         { label: "Curry cut", searchQuery: "curry cut", reason: "Made for curry" },
         { label: "Chicken legs", searchQuery: "chicken legs", reason: "Stays juicy" },
@@ -31,7 +31,7 @@ function fallbackReply(message: string, mode: Mode, item: string): { reply: stri
     };
   }
   return {
-    reply: `You're cooking ${message}. These cuts from the shop sit well with ${item}.`,
+    reply: `${message} with ${item} — about 250 g chicken per person.\n\n1. Pat the chicken dry and season with salt and spices.\n2. Heat a little oil in a pan on medium.\n3. Cook until golden and no pink remains inside.\n4. Rest a minute, then serve hot with rice or roti.`,
     suggestions: [
       { label: "Curry cut", searchQuery: "curry cut" },
       { label: "Boneless", searchQuery: "boneless" },
@@ -59,18 +59,18 @@ export const POST = handle(async (req) => {
   const names = listProducts({ pageSize: "48" }).items.map((product) => product.name);
   const cartSummary = cartItems.map((line) => `${line.name} ${line.weight} ×${line.qty}`).join(", ");
   const catalogue = names.join(", ") || "Curry Cut, Boneless Chicken, Chicken Breast, Chicken Legs, Chicken Liver, Chicken Gizzard";
-  const format = `Return only JSON: {"reply":"...","suggestions":[{"label":"...","searchQuery":"...","reason":"..."}]}. Give 2 to 4 suggestions. Every suggestion must be a product from this list, with label and searchQuery set to the exact product name: ${catalogue}. Never suggest recipes, sides, vegetables or anything not on the list. reason is under 8 words.`;
+  const format = `Return only JSON: {"reply":"...","suggestions":[{"label":"...","searchQuery":"...","reason":"..."}]}. Give 2 to 4 suggestions. Every suggestion must be a product from this list, with label and searchQuery set to the exact product name: ${catalogue}. Never put sides, vegetables, or non-catalogue items in suggestions — only shop chicken cuts. reason is under 8 words. In reply, use \\n for new lines between steps.`;
   const system =
     mode === "gym"
-      ? `You are a friendly assistant for Karthika Chicken Centre (ChickenCrew), a fresh chicken shop in India. The customer wants gym-friendly, high-protein meal ideas. Answer their actual question: suggest a dish, roughly how much chicken to buy, and one quick cooking tip. Keep the reply to 2-4 short sentences. No medical claims; mention ideas are general, not medical advice. ${format}`
-      : `You are a friendly cooking assistant for Karthika Chicken Centre (ChickenCrew), a fresh chicken shop in India. Answer the customer's actual question in plain Indian home-cooking language: which cut suits their dish, roughly how much to buy for the number of people (about 250 g per person for curries), and one quick cooking tip. Mention what is already in their cart if relevant. Keep the reply to 2-4 short sentences. ${format}`;
+      ? `You are a friendly assistant for Karthika Chicken Centre (ChickenCrew), a fresh chicken shop in India. The customer wants gym-friendly, high-protein meal ideas. In reply: name a simple dish, say roughly how much lean chicken to buy, then give a clear numbered step-by-step (5–8 short steps) using common Indian kitchen ingredients. Mention cart items if relevant. No medical claims; say ideas are general, not medical advice. ${format}`
+      : `You are a friendly cooking assistant for Karthika Chicken Centre (ChickenCrew), a fresh chicken shop in India. Answer in plain Indian home-cooking language. In reply: say which cut suits the dish, roughly how much to buy (about 250 g per person for curries), mention cart items if relevant, then give a clear numbered step-by-step recipe (6–10 short steps) with common pantry spices and ingredients. Keep steps practical for a home kitchen. Do not invent fancy restaurant techniques. ${format}`;
 
   const raw = await groqChat(
     [
       { role: "system", content: system },
       { role: "user", content: `Cart: ${cartSummary || "empty"}\nCustomer says: ${message}` },
     ],
-    { maxTokens: 1200, json: true },
+    { maxTokens: 1600, json: true },
   );
 
   let reply = fallbackReply(message, mode, item);
@@ -89,7 +89,15 @@ export const POST = handle(async (req) => {
           const reason = cleanText(entry.reason, 120);
           return [{ label: product, searchQuery: product, ...(reason ? { reason } : {}) }];
         });
-      const text = cleanText(json.reply, 600);
+      const text =
+        typeof json.reply === "string"
+          ? json.reply
+              .replace(/\r\n/g, "\n")
+              .replace(/[^\S\n]+/g, " ")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim()
+              .slice(0, 2200)
+          : "";
       if (text) reply = { reply: text, suggestions: suggestions.length ? suggestions : reply.suggestions };
     } catch {
       reply = fallbackReply(message, mode, item);
