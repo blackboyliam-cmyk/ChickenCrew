@@ -16,19 +16,20 @@ export const CUSTOMER_NOTIFY_STATUSES: OrderStatus[] = [
 export function customerStatusMessage(order: Pick<Order, "id" | "number" | "address" | "slot" | "status">, status: OrderStatus = order.status) {
   const first = order.address.name.split(" ")[0] || "there";
   const track = `${SITE()}/orders/${order.id}`;
+  const signInNote = " (sign in with your order mobile number if asked)";
   switch (status) {
     case "placed":
     case "confirmed":
-      return `Hi ${first}, your ChickenCrew order #${order.number} is confirmed for ${order.slot.label}. Track it here: ${track}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} is confirmed for ${order.slot.label}. Track it here${signInNote}: ${track}`;
     case "preparing":
     case "ready":
-      return `Hi ${first}, we're packing your ChickenCrew order #${order.number} now. Track: ${track}`;
+      return `Hi ${first}, we're packing your ChickenCrew order #${order.number} now. Track${signInNote}: ${track}`;
     case "out_for_delivery":
-      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Live tracking: ${track}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Live tracking${signInNote}: ${track}`;
     case "delivered":
-      return `Hi ${first}, your ChickenCrew order #${order.number} was delivered. How was it? Leave a quick rating: ${track}?review=1`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} was delivered. How was it? Leave a quick rating${signInNote}: ${track}?review=1`;
     default:
-      return `Hi ${first}, this is ChickenCrew about your order #${order.number}. Track: ${track}`;
+      return `Hi ${first}, this is ChickenCrew about your order #${order.number}. Track${signInNote}: ${track}`;
   }
 }
 

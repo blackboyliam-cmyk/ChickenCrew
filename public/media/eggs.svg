@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Fresh farm eggs">
-  <rect width="800" height="800" fill="#f4f1ea"/>
-  <ellipse cx="280" cy="430" rx="130" ry="170" fill="#fff8e7" stroke="#e8dcc3" stroke-width="8"/>
-  <ellipse cx="420" cy="380" rx="145" ry="190" fill="#fffdf6" stroke="#e2d4b8" stroke-width="8"/>
-  <ellipse cx="560" cy="450" rx="125" ry="165" fill="#fff6e0" stroke="#e8dcc3" stroke-width="8"/>
-  <ellipse cx="390" cy="300" rx="40" ry="28" fill="#fff" opacity="0.55"/>
-</svg>

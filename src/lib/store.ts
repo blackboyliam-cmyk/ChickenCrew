@@ -208,6 +208,16 @@ function normalizeDb(db: DB): { db: DB; changed: boolean } {
       dozen.mrp = Math.max(dozen.mrp, 8500);
       changed = true;
     }
+    if (eggs && eggs.images[0]?.url !== "/media/eggs.jpg") {
+      eggs.images = [{ url: "/media/eggs.jpg", alt: "Fresh farm eggs in a tray" }];
+      changed = true;
+    }
+    const eggsCat = db.categories.find((item) => item.id === "cat_eggs");
+    if (eggsCat && eggsCat.image !== "/media/eggs.jpg") {
+      eggsCat.image = "/media/eggs.jpg";
+      eggsCat.imageAlt = "Fresh farm eggs in a tray";
+      changed = true;
+    }
   }
   return { db, changed };
 }
@@ -1288,7 +1298,7 @@ export function getOrderForUser(userId: string, id: string) {
 
 export function publicOrder(order: Order, source?: DB) {
   const db = source || readDb();
-  const review = db.reviews.find((item) => item.orderId === order.id) || null;
+  const review = (db.reviews || []).find((item) => item.orderId === order.id) || null;
   return {
     id: order.id,
     number: order.number,

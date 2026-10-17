@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { BellRing, CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
+import { BellRing, CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, UserRound, XCircle } from "lucide-react";
 import { OrderReviewCard } from "@/components/site/order-review-card";
 import { OrderTracking } from "@/components/site/order-tracking";
-import { ErrorState, ListSkeleton } from "@/components/site/states";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/site/states";
 import { useShop } from "@/components/site/shop-context";
 import { api, ApiClientError } from "@/lib/api-client";
 import { formatINR } from "@/lib/money";
@@ -59,10 +59,13 @@ export default function OrderPage() {
   const { refresh, settings, user } = useShop();
   const [order, setOrder] = useState<OrderView | null>(null);
   const [error, setError] = useState("");
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"" | "cancel" | "reorder" | "pay">("");
   const [origin, setOrigin] = useState("");
   const askReview = search.get("review") === "1";
+  const orderPath = `/orders/${params.id}${askReview ? "?review=1" : ""}`;
+  const loginHref = `/login?next=${encodeURIComponent(orderPath)}`;
 
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -71,17 +74,26 @@ export default function OrderPage() {
       const data = await api<{ order: OrderView }>(`/api/orders/${params.id}`);
       setOrder(data.order);
       setError("");
+      setNeedsLogin(false);
     } catch (err) {
+      if (err instanceof ApiClientError && err.status === 401) {
+        setNeedsLogin(true);
+        setError("Please sign in to track this order.");
+        return;
+      }
+      setNeedsLogin(false);
       setError(err instanceof ApiClientError ? err.message : "Something went wrong.");
     }
   }
 
   useEffect(() => {
     void load();
-    const timer = setInterval(() => void load(), 15000);
+    const timer = setInterval(() => {
+      if (!needsLogin) void load();
+    }, 15000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [params.id, needsLogin]);
 
   useEffect(() => {
     if (!askReview || !order || order.status !== "delivered" || order.reviewed) return;
@@ -141,10 +153,30 @@ export default function OrderPage() {
     }
   }
 
+  if (needsLogin && !order) {
+    return (
+      <div className="py-8">
+        <EmptyState
+          icon={UserRound}
+          title="Sign in to track your order"
+          body="You got an update from the shop. Sign in with the same mobile number you used to order, then you'll see live status and tracking."
+          actionLabel="Sign in"
+          href={loginHref}
+        />
+      </div>
+    );
+  }
   if (error && !order) {
     return (
       <div className="py-8">
-        <ErrorState body="We couldn't load this order. Please try again." onRetry={() => void load()} />
+        <ErrorState title="Couldn't open this order" body={error} onRetry={() => void load()} />
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Already ordered?{" "}
+          <Link href={loginHref} className="font-semibold text-primary hover:underline">
+            Sign in
+          </Link>{" "}
+          with the number used at checkout.
+        </p>
       </div>
     );
   }

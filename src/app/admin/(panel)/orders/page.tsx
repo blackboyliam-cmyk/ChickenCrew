@@ -66,19 +66,20 @@ const NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
 function customerMessage(order: Row, origin: string) {
   const first = order.address.name.split(" ")[0];
   const track = `${origin}/orders/${order.id}`;
+  const signIn = " Sign in with your order mobile number if asked.";
   switch (order.status) {
     case "placed":
     case "confirmed":
-      return `Hi ${first}, your ChickenCrew order #${order.number} is confirmed for ${order.slot.label}. Track it here: ${track}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} is confirmed for ${order.slot.label}. Track: ${track}.${signIn}`;
     case "preparing":
     case "ready":
-      return `Hi ${first}, we're packing your ChickenCrew order #${order.number} now. Track it here: ${track}`;
+      return `Hi ${first}, we're packing your ChickenCrew order #${order.number} now. Track: ${track}.${signIn}`;
     case "out_for_delivery":
-      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Track the rider live: ${track}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Track the rider: ${track}.${signIn}`;
     case "delivered":
-      return `Hi ${first}, your ChickenCrew order #${order.number} was delivered. How was it? Leave a quick rating: ${origin}/orders/${order.id}?review=1 — Bill: ${origin}/bill/${order.id}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} was delivered. Rate it: ${origin}/orders/${order.id}?review=1 — Bill: ${origin}/bill/${order.id}.${signIn}`;
     default:
-      return `Hi ${first}, this is ChickenCrew about your order #${order.number}.`;
+      return `Hi ${first}, this is ChickenCrew about your order #${order.number}. Track: ${track}.${signIn}`;
   }
 }
 

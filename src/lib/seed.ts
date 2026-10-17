@@ -354,7 +354,7 @@ function product(input: {
 
 /** Shared eggs catalogue so existing shops can pick it up without a full reseed. */
 export function eggsCategory(): Category {
-  return category("cat_eggs", "eggs", "Eggs", "/media/eggs.svg", "Fresh farm eggs", 9);
+  return category("cat_eggs", "eggs", "Eggs", "/media/eggs.jpg", "Fresh farm eggs in a tray", 9);
 }
 
 export function eggsProduct(): Product {
@@ -368,7 +368,7 @@ export function eggsProduct(): Product {
     details: "Farm fresh eggs. Packed carefully for delivery.",
     storage: "Keep refrigerated. Use within a week of delivery.",
     preparation: "Cook until the white and yolk are done to your liking.",
-    images: [{ url: "/media/eggs.svg", alt: "Fresh farm eggs" }],
+    images: [{ url: "/media/eggs.jpg", alt: "Fresh farm eggs in a tray" }],
     variants: [
       variant("var_eggs_6", "6 pcs", "KCC-EGG-6", 42, 48, 40),
       variant("var_eggs_12", "1 dozen", "KCC-EGG-12", 78, 85, 50),
