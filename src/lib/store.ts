@@ -6,6 +6,11 @@ import { loadSnapshot, saveEvents, saveSnapshot, usingMongo } from "./db-backend
 import { ApiError } from "./errors";
 import { optimizeImage } from "./images";
 import { hashPin, verifyPin } from "./pin";
+import {
+  CUSTOMER_NOTIFY_STATUSES,
+  customerStatusMessage,
+  sendWhatsAppText,
+} from "./notify-customer";
 import { pushConfigured, pushPublicKey, sendPush, type PushMessage } from "./push";
 import { formatINR, rupeesToPaise } from "./money";
 import { computeDeliveryFee, discountPercent, evaluateCoupon, isSlotBookable } from "./pricing";
@@ -33,6 +38,7 @@ import type {
   Offer,
   Order,
   OrderItem,
+  OrderReview,
   OrderStatus,
   OtpRecord,
   PaymentMethod,
@@ -130,6 +136,31 @@ function newOrderAlert(db: DB, order: Order) {
   });
 }
 
+/** Pushes a WhatsApp text when Cloud API is configured; never blocks the order. */
+function notifyCustomer(order: Order, status: OrderStatus) {
+  if (!CUSTOMER_NOTIFY_STATUSES.includes(status)) return;
+  const phone = order.address.phone || order.phone;
+  if (!phone) return;
+  const text = customerStatusMessage(order, status);
+  afterSave(async () => {
+    try {
+      await sendWhatsAppText(phone, text);
+    } catch (error) {
+      console.error("Customer WhatsApp notify failed", error);
+    }
+  });
+}
+
+function productReviewStats(db: DB, productId: string) {
+  const orderIds = new Set(
+    db.orders.filter((order) => order.items.some((item) => item.productId === productId) && order.status === "delivered").map((order) => order.id),
+  );
+  const reviews = db.reviews.filter((review) => orderIds.has(review.orderId));
+  if (!reviews.length) return { reviewCount: 0, ratingAvg: 0 };
+  const sum = reviews.reduce((total, review) => total + review.rating, 0);
+  return { reviewCount: reviews.length, ratingAvg: Math.round((sum / reviews.length) * 10) / 10 };
+}
+
 function currentScope(): RequestDb {
   const scope = requestDb.getStore();
   if (!scope) throw new Error("Shop data was used outside withDb().");
@@ -143,8 +174,10 @@ function normalizeDb(db: DB): DB {
   db.analytics ||= [];
   db.riders ||= [];
   db.pushSubscriptions ||= [];
+  db.reviews ||= [];
   db.settings.gstin ??= "";
   db.settings.fssai ??= "";
+  db.settings.googleReviewsUrl ??= "";
   db.otps = (db.otps || [])
     .map((otp) => {
       const legacy = otp as OtpRecord & { phone?: string };
@@ -441,7 +474,7 @@ export function getProduct(slug: string) {
         discountPercent: discountPercent(variant.price, variant.mrp),
       })),
     related,
-    reviewCount: 0,
+    ...productReviewStats(db, product.id),
   };
 }
 
@@ -465,7 +498,7 @@ export function buildFaqs(settings: PublicSettings, slotLabels: string[]): Faq[]
     ? `Published slots: ${slotLabels.join(", ")}.`
     : "The shop has not published delivery slots yet.";
   const area = settings.servicePincodes.length
-    ? `Current delivery pincodes: ${settings.servicePincodes.join(", ")}.`
+    ? `We deliver anywhere in Dombivili and Thakurli (pincodes ${settings.servicePincodes.join(", ")}).`
     : "Any Indian pincode can be used until the shop publishes its delivery list.";
   const payment = [
     settings.onlineReady
@@ -1143,7 +1176,10 @@ export function createOrder(input: CheckoutInput): Order {
     holdInventory(db, order);
     db.orders.push(order);
     cart.items = [];
-    if (order.status === "placed") newOrderAlert(db, order);
+    if (order.status === "placed") {
+      newOrderAlert(db, order);
+      notifyCustomer(order, "placed");
+    }
     return order;
   });
 }
@@ -1212,7 +1248,7 @@ export function listOrders(userId: string, filter?: string) {
   const orders = readDb()
     .orders.filter((order) => order.userId === userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return orders.filter((order) => matchesFilter(order, filter)).map(publicOrder);
+  return orders.filter((order) => matchesFilter(order, filter)).map((order) => publicOrder(order));
 }
 
 function matchesFilter(order: Order, filter?: string) {
@@ -1229,7 +1265,9 @@ export function getOrderForUser(userId: string, id: string) {
   return publicOrder(order);
 }
 
-export function publicOrder(order: Order) {
+export function publicOrder(order: Order, source?: DB) {
+  const db = source || readDb();
+  const review = db.reviews.find((item) => item.orderId === order.id) || null;
   return {
     id: order.id,
     number: order.number,
@@ -1251,7 +1289,31 @@ export function publicOrder(order: Order) {
     outForDeliveryAt: order.outForDeliveryAt || null,
     deliveredAt: order.deliveredAt || null,
     collection: order.collection || null,
+    reviewed: Boolean(review),
+    review: review ? { rating: review.rating, comment: review.comment, createdAt: review.createdAt } : null,
   };
+}
+
+export function submitOrderReview(userId: string, orderId: string, input: { rating: unknown; comment?: unknown }) {
+  const rating = Number(input.rating);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ApiError(400, "Choose a rating from 1 to 5 stars.");
+  const comment = cleanText(input.comment, 400);
+  return update((db) => {
+    const order = db.orders.find((item) => item.userId === userId && (item.id === orderId || item.number === orderId));
+    if (!order) throw new ApiError(404, "We could not find that order.");
+    if (order.status !== "delivered") throw new ApiError(400, "You can rate an order after it is delivered.");
+    if (db.reviews.some((item) => item.orderId === order.id)) throw new ApiError(409, "You already rated this order.");
+    const review: OrderReview = {
+      id: randomUUID(),
+      orderId: order.id,
+      userId,
+      rating,
+      comment,
+      createdAt: new Date().toISOString(),
+    };
+    db.reviews.push(review);
+    return { review: { rating: review.rating, comment: review.comment, createdAt: review.createdAt } };
+  });
 }
 
 export function cancelOrder(userId: string, id: string) {
@@ -1345,7 +1407,10 @@ export function markOrderPaid(razorpayOrderId: string, razorpayPaymentId: string
     order.updatedAt = new Date().toISOString();
     const payment = db.payments.find((item) => item.razorpayOrderId === razorpayOrderId);
     if (payment) payment.status = "paid";
-    if (justPlaced) newOrderAlert(db, order);
+    if (justPlaced) {
+      newOrderAlert(db, order);
+      notifyCustomer(order, "placed");
+    }
     return publicOrder(order);
   });
 }
@@ -1670,7 +1735,7 @@ export function adminListOrders() {
   return readDb()
     .orders.slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(publicOrder);
+    .map((order) => publicOrder(order));
 }
 
 const STATUSES: OrderStatus[] = [
@@ -1724,9 +1789,10 @@ export function adminUpdateOrder(id: string, input: { status?: unknown; riderId?
         }
       }
       order.status = next;
+      notifyCustomer(order, next);
     }
     order.updatedAt = now;
-    return publicOrder(order);
+    return publicOrder(order, db);
   });
 }
 
@@ -1927,6 +1993,7 @@ export function riderUpdateOrder(riderId: string, orderId: string, input: Record
       }
       order.status = "out_for_delivery";
       order.outForDeliveryAt = now;
+      notifyCustomer(order, "out_for_delivery");
     } else if (input.action === "deliver") {
       if (order.status !== "out_for_delivery") throw new ApiError(400, "Start the delivery first.");
       if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
@@ -1937,6 +2004,7 @@ export function riderUpdateOrder(riderId: string, orderId: string, input: Record
       }
       order.status = "delivered";
       order.deliveredAt = now;
+      notifyCustomer(order, "delivered");
       const rider = db.riders.find((item) => item.id === riderId);
       const paid = order.collection
         ? `${formatINR(order.collection.amount)} collected by ${order.collection.mode === "upi" ? "UPI" : "cash"}`
@@ -2012,9 +2080,16 @@ export function adminUpdateSettings(input: Record<string, unknown>) {
       "about",
       "gstin",
       "fssai",
+      "googleReviewsUrl",
     ] as const;
     for (const key of textKeys) {
-      if (key in input) settings[key] = cleanText(input[key], key === "about" ? 1200 : 200);
+      if (key in input) {
+        const max = key === "about" ? 1200 : key === "googleReviewsUrl" || key === "mapUrl" ? 500 : 200;
+        settings[key] = cleanText(input[key], max);
+      }
+    }
+    if (settings.googleReviewsUrl && !/^https?:\/\//i.test(settings.googleReviewsUrl)) {
+      throw new ApiError(400, "Google reviews link should start with https://");
     }
     settings.gstin = settings.gstin.toUpperCase().replace(/\s/g, "");
     if (settings.gstin && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(settings.gstin)) {

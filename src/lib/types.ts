@@ -239,6 +239,8 @@ export type ShopSettings = {
   /** Printed on bills when set. */
   gstin: string;
   fssai: string;
+  /** Public Google Business / reviews page URL. */
+  googleReviewsUrl: string;
   policies: {
     privacy: string;
     terms: string;
@@ -246,6 +248,16 @@ export type ShopSettings = {
     shipping: string;
   };
   extraFaqs: Faq[];
+};
+
+/** One rating left after a delivered order. */
+export type OrderReview = {
+  id: string;
+  orderId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
 };
 
 export type OtpRecord = {
@@ -306,6 +318,7 @@ export type DB = {
   payments: PaymentRecord[];
   riders: Rider[];
   pushSubscriptions: PushSubscriptionRecord[];
+  reviews: OrderReview[];
 };
 
 export type ProductCardData = {

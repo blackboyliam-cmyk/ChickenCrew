@@ -18,6 +18,7 @@ type Form = {
   state: string;
   pincode: string;
   mapUrl: string;
+  googleReviewsUrl: string;
   about: string;
   gstin: string;
   fssai: string;
@@ -46,6 +47,7 @@ const fromSettings = (s: ShopSettings): Form => ({
   state: s.state,
   pincode: s.pincode,
   mapUrl: s.mapUrl,
+  googleReviewsUrl: s.googleReviewsUrl ?? "",
   about: s.about,
   gstin: s.gstin ?? "",
   fssai: s.fssai ?? "",
@@ -150,6 +152,13 @@ export default function SettingsAdmin() {
           <Field label="State" value={form.state} onChange={set("state")} />
           <Field label="Pincode" inputMode="numeric" value={form.pincode} onChange={set("pincode")} />
           <Field label="Google Maps link" className="sm:col-span-2" value={form.mapUrl} onChange={set("mapUrl")} />
+          <Field
+            label="Google reviews link"
+            className="sm:col-span-2"
+            value={form.googleReviewsUrl}
+            onChange={set("googleReviewsUrl")}
+            hint="Paste your Google Business reviews URL. Shown on the home and about pages."
+          />
         </Panel>
 
         <Panel id="delivery" title="Delivery" description="Where you deliver and what it costs." bodyClassName="grid gap-4 sm:grid-cols-2">

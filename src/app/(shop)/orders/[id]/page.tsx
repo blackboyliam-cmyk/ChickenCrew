@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { BellRing, CalendarClock, Check, Clock, CreditCard, FileText, Loader2, MapPin, MessageCircle, RotateCcw, XCircle } from "lucide-react";
+import { OrderReviewCard } from "@/components/site/order-review-card";
 import { OrderTracking } from "@/components/site/order-tracking";
 import { ErrorState, ListSkeleton } from "@/components/site/states";
 import { useShop } from "@/components/site/shop-context";
@@ -16,6 +17,11 @@ import { formatOrderDate } from "@/lib/time";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+type OrderView = Order & {
+  reviewed?: boolean;
+  review?: { rating: number; comment: string; createdAt: string } | null;
+};
+
 const STEPS = [
   ["placed", "Order placed"],
   ["confirmed", "Confirmed"],
@@ -25,7 +31,7 @@ const STEPS = [
   ["delivered", "Delivered"],
 ] as const;
 
-function alertMessage(order: Order, shopName: string, origin: string) {
+function alertMessage(order: OrderView, shopName: string, origin: string) {
   const address = order.address;
   const payment =
     order.paymentStatus === "paid" ? "Paid online" : order.paymentMethod === "cod" ? "Cash on delivery" : "Online payment pending";
@@ -51,17 +57,18 @@ export default function OrderPage() {
   const search = useSearchParams();
   const router = useRouter();
   const { refresh, settings, user } = useShop();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderView | null>(null);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"" | "cancel" | "reorder" | "pay">("");
   const [origin, setOrigin] = useState("");
+  const askReview = search.get("review") === "1";
 
   useEffect(() => setOrigin(window.location.origin), []);
 
   async function load() {
     try {
-      const data = await api<{ order: Order }>(`/api/orders/${params.id}`);
+      const data = await api<{ order: OrderView }>(`/api/orders/${params.id}`);
       setOrder(data.order);
       setError("");
     } catch (err) {
@@ -75,6 +82,12 @@ export default function OrderPage() {
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
+
+  useEffect(() => {
+    if (!askReview || !order || order.status !== "delivered" || order.reviewed) return;
+    const timer = window.setTimeout(() => document.getElementById("review")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    return () => window.clearTimeout(timer);
+  }, [askReview, order]);
 
   async function cancel() {
     if (!window.confirm("Cancel this order?")) return;
@@ -316,6 +329,17 @@ export default function OrderPage() {
       </section>
 
       {order.status === "out_for_delivery" && <OrderTracking orderId={order.id} />}
+
+      {order.status === "delivered" && (
+        <div className="mt-4">
+          <OrderReviewCard
+            orderId={order.id}
+            autoFocus={askReview && !order.reviewed}
+            initial={order.review ? { rating: order.review.rating, comment: order.review.comment } : null}
+            onSaved={(review) => setOrder({ ...order, reviewed: true, review: { ...review, createdAt: new Date().toISOString() } })}
+          />
+        </div>
+      )}
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <section className="rounded-3xl border bg-card p-5">

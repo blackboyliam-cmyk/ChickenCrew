@@ -15,7 +15,18 @@ export const metadata: Metadata = {
     default: "ChickenCrew | Karthika Chicken Centre",
     template: "%s | Karthika Chicken Centre",
   },
-  description: "Freshly prepared chicken, packed with care and delivered to your doorstep.",
+  description:
+    "Fresh chicken delivery in Dombivili and Thakurli from Karthika Chicken Centre. Order curry cut, boneless, breast and more online — cut to order, hygienically packed, delivered in your slot.",
+  keywords: [
+    "fresh chicken delivery",
+    "chicken delivery Dombivili",
+    "chicken delivery Thakurli",
+    "chicken shop Dombivli",
+    "Karthika Chicken Centre",
+    "ChickenCrew",
+    "curry cut chicken",
+    "order chicken online",
+  ],
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Karthika Chicken", statusBarStyle: "default" },
   icons: { apple: "/icon-192.png" },
@@ -23,12 +34,14 @@ export const metadata: Metadata = {
     siteName: "Karthika Chicken Centre",
     type: "website",
     title: "ChickenCrew | Karthika Chicken Centre",
-    description: "Freshly prepared chicken, packed with care and delivered to your doorstep.",
+    description:
+      "Fresh chicken delivery in Dombivili and Thakurli — cut to order, hygienically packed, and delivered in a slot you choose.",
   },
   twitter: {
     card: "summary_large_image",
     title: "ChickenCrew | Karthika Chicken Centre",
-    description: "Freshly prepared chicken, packed with care and delivered to your doorstep.",
+    description:
+      "Fresh chicken delivery in Dombivili and Thakurli — cut to order, hygienically packed, and delivered in a slot you choose.",
   },
 };
 

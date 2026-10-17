@@ -117,7 +117,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h1 className="mt-1 text-[24px] leading-tight font-extrabold tracking-tight sm:text-[26px] md:text-[34px]">{product.name}</h1>
           {product.reviewCount > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"}
+              {product.ratingAvg.toFixed(1)} ★ · {product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"}
+            </p>
+          )}
+          {product.preparation && (
+            <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">Prep tip: </span>
+              {product.preparation}
             </p>
           )}
           <div className="mt-5">

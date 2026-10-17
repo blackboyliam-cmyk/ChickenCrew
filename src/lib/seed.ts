@@ -5,11 +5,11 @@ const POLICIES = {
   privacy:
     "Karthika Chicken Centre collects your name, mobile number, optional email, delivery address, and order details so the shop can prepare and deliver your order. Payment card details are handled by the payment gateway, not stored on this site. Session cookies keep you signed in. The shop does not sell your personal information.",
   terms:
-    "An order is placed only after the server checks the current price, stock, delivery pincode, and slot. The price stored on the server at checkout is the price you pay. Cuts that are unavailable are not substituted. Delivery is limited to pincodes and slots the shop has published.",
+    "An order is placed only after the server checks the current price, stock, delivery pincode, and slot. The price stored on the server at checkout is the price you pay. Cuts that are unavailable are not substituted. Delivery is limited to Dombivili and Thakurli (and the slots the shop has published).",
   refund:
     "You can cancel from the order page while the order is still placed or confirmed, and before the delivery slot cutoff. Cash on delivery orders are not charged. If you paid online, the shop marks the payment for refund after the cancellation is confirmed. The bank and payment gateway decide how long a refund takes to appear.",
   shipping:
-    "This shop uses scheduled delivery slots. It does not promise instant delivery. The delivery fee and any free-delivery threshold are calculated on the server and shown in your cart before you pay. Orders outside the published delivery area cannot be placed.",
+    "We deliver anywhere in Dombivili and Thakurli using scheduled delivery slots. It does not promise instant delivery. The delivery fee and any free-delivery threshold are calculated on the server and shown in your cart before you pay. Orders outside Dombivili and Thakurli cannot be placed.",
 };
 
 function variant(
@@ -284,22 +284,23 @@ export function createSeed(): DB {
     whatsapp: "",
     email: "",
     addressLine: "",
-    area: "",
-    city: "",
-    state: "",
-    pincode: "",
+    area: "Dombivili",
+    city: "Dombivili",
+    state: "Maharashtra",
+    pincode: "421201",
     hours: "",
     mapUrl: "",
     about:
-      "Karthika Chicken Centre is a local chicken shop. ChickenCrew is the name on this ordering site. Browse the cuts, pick a weight, and choose a delivery slot where the shop delivers.",
-    servicePincodes: [],
+      "Karthika Chicken Centre is a local chicken shop serving Dombivili and Thakurli. ChickenCrew is the name on this ordering site. Browse the cuts, pick a weight, and choose a delivery slot — we deliver anywhere in Dombivili and Thakurli.",
+    servicePincodes: ["421201", "421202", "421203"],
     deliveryFee: 4000,
-    freeDeliveryAbove: 79900,
+    freeDeliveryAbove: 24900,
     codEnabled: true,
     onlinePaymentEnabled: true,
     starterCatalogue: true,
     gstin: "",
     fssai: "",
+    googleReviewsUrl: "",
     policies: POLICIES,
     extraFaqs: [],
   };
@@ -323,6 +324,7 @@ export function createSeed(): DB {
     payments: [],
     riders: [],
     pushSubscriptions: [],
+    reviews: [],
   };
 }
 

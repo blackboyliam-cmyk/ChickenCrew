@@ -76,7 +76,7 @@ function customerMessage(order: Row, origin: string) {
     case "out_for_delivery":
       return `Hi ${first}, your ChickenCrew order #${order.number} is on the way! Track the rider live: ${track}`;
     case "delivered":
-      return `Hi ${first}, thanks for ordering from ChickenCrew! Your bill for order #${order.number}: ${origin}/bill/${order.id}`;
+      return `Hi ${first}, your ChickenCrew order #${order.number} was delivered. How was it? Leave a quick rating: ${origin}/orders/${order.id}?review=1 — Bill: ${origin}/bill/${order.id}`;
     default:
       return `Hi ${first}, this is ChickenCrew about your order #${order.number}.`;
   }
@@ -140,12 +140,26 @@ function OrdersView() {
     if (status === order.status) return;
     if (status === "cancelled" && !window.confirm(`Cancel order #${order.number}? Stock goes back on the shelf.`)) return;
     setBusy(order.id);
-    await attempt(
+    const ok = await attempt(
       () => saveAdmin(`/api/admin/orders/${order.id}`, { status }, "PUT"),
       `#${order.number} is now ${STATUS[status].label.toLowerCase()}`,
     );
     await reload();
     setBusy(null);
+    if (
+      ok &&
+      order.address.phone &&
+      ["placed", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"].includes(status)
+    ) {
+      const href = waLink(order.address.phone, customerMessage({ ...order, status }, origin));
+      toast.message("Send WhatsApp update?", {
+        description: `Tell the customer order #${order.number} is ${STATUS[status].label.toLowerCase()}.`,
+        action: {
+          label: "WhatsApp",
+          onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
+        },
+      });
+    }
   }
 
   async function remove(order: Row) {

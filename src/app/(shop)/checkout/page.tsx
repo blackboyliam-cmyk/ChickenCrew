@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Banknote, Check, ChevronLeft, CreditCard, Loader2, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CheckoutUpsells } from "@/components/site/checkout-upsells";
 import { GoogleButton } from "@/components/site/google-button";
 import { OtpForm } from "@/components/site/otp-form";
 import { PasswordSignIn } from "@/components/site/password-sign-in";
@@ -754,6 +755,7 @@ export default function CheckoutPage() {
                 <p className="font-semibold">{method === "cod" ? "Cash on delivery" : "Pay online"}</p>
                 {quote?.ok && <p className="text-success">Coupon {quote.code} applied</p>}
               </ReviewRow>
+              <CheckoutUpsells />
             </section>
           )}
 

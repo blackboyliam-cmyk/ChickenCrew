@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, MapPin, Truck } from "lucide-react";
+import { ArrowRight, Check, MapPin, Star, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CategoryGrid } from "@/components/site/category-tile";
 import { ComboCard, OfferCard } from "@/components/site/merch";
 import { NextSlots } from "@/components/site/next-slots";
 import { ProductGrid } from "@/components/site/product-card";
+import { ReorderBanner } from "@/components/site/reorder-banner";
 import { EmptyState, SectionHeader } from "@/components/site/states";
 import { JsonLd } from "@/components/site/json-ld";
 import { formatINR } from "@/lib/money";
@@ -59,7 +60,9 @@ export default async function HomePage() {
             Honest Prices.
           </h1>
           <p className="mt-2.5 max-w-md text-[15px] leading-relaxed text-muted-foreground md:mt-4 md:text-lg">
-            Freshly prepared cuts, packed with care and delivered to your doorstep.
+            Fresh chicken delivery
+            {settings.area || settings.city ? ` in ${[settings.area, settings.city].filter(Boolean).join(", ")}` : ""} —
+            cut to order, hygienically packed, and brought to your door in a slot you choose.
           </p>
         </div>
 
@@ -104,6 +107,25 @@ export default async function HomePage() {
       </section>
 
       <NextSlots slots={home.delivery.nextSlots} href="/shop" />
+
+      <div className="py-2 md:py-3">
+        <ReorderBanner />
+      </div>
+
+      {settings.googleReviewsUrl && (
+        <a
+          href={settings.googleReviewsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mb-2 flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 text-sm shadow-card transition-colors hover:border-primary/40"
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden />
+            See Google reviews for {settings.name}
+          </span>
+          <span className="text-xs font-bold text-primary">Open →</span>
+        </a>
+      )}
 
       {/* Shop by cut */}
       <section id="shop-by-cut" className="scroll-mt-32 py-6 md:py-10">
@@ -224,10 +246,8 @@ export default async function HomePage() {
               {
                 icon: MapPin,
                 label: "Delivering to",
-                value: home.delivery.pincodes.length
-                  ? `${home.delivery.pincodes.length} ${home.delivery.pincodes.length === 1 ? "pincode" : "pincodes"}`
-                  : "Not published yet",
-                note: home.delivery.pincodes.length ? home.delivery.pincodes.join(", ") : null,
+                value: "Dombivili & Thakurli",
+                note: home.delivery.pincodes.length ? home.delivery.pincodes.join(", ") : "Anywhere in both areas",
               },
             ].map(({ icon: Icon, label, value, note }) => (
               <div key={label} className="flex gap-3 p-4">

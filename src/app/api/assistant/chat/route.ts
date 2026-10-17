@@ -6,37 +6,42 @@ import { cleanText } from "@/lib/validators";
 
 type Mode = "cooking" | "gym";
 
-type Suggestion = { label: string; searchQuery: string; reason?: string };
+type Suggestion = {
+  label: string;
+  searchQuery: string;
+  reason?: string;
+  productId?: string | null;
+  variantId?: string | null;
+};
 
-function fallbackReply(message: string, mode: Mode, item: string): { reply: string; suggestions: Suggestion[] } {
+function fallbackReply(message: string, mode: Mode, item: string, catalogue: Suggestion[]): { reply: string; suggestions: Suggestion[] } {
+  const pick = (...queries: string[]) =>
+    queries
+      .map((query) => catalogue.find((entry) => entry.label.toLowerCase().includes(query)))
+      .filter((entry): entry is Suggestion => Boolean(entry))
+      .slice(0, 3);
   const lower = message.toLowerCase();
   if (mode === "gym") {
     return {
       reply: `High-protein plate with ${item} (about 150–200 g cooked chicken per person).\n\n1. Marinate lean pieces with salt, pepper, chilli, and a little oil for 15 minutes.\n2. Grill or pan-sear on medium-high until cooked through (no pink inside).\n3. Rest 2 minutes, slice, and plate with dal or salad.\n\nGeneral food inspiration, not medical advice.`,
-      suggestions: [
-        { label: "Chicken breast", searchQuery: "chicken breast", reason: "Lean and high protein" },
-        { label: "Boneless", searchQuery: "boneless", reason: "Easy to portion" },
-        { label: "Chicken legs", searchQuery: "chicken legs", reason: "More flavour, still simple" },
-      ],
+      suggestions: pick("breast", "boneless", "leg").map((entry, index) => ({
+        ...entry,
+        reason: ["Lean and high protein", "Easy to portion", "More flavour, still simple"][index],
+      })),
     };
   }
   if (lower.includes("curry")) {
     return {
       reply: `Chicken curry with ${item} — about 250 g per person.\n\n1. Heat oil, fry onion until soft, then ginger-garlic paste.\n2. Add chilli, turmeric, coriander, and salt; cook 1 minute.\n3. Add chicken and sear until the colour changes.\n4. Pour in tomato or a little water, cover, and simmer 20–25 minutes until tender.\n5. Finish with garam masala and coriander leaves.`,
-      suggestions: [
-        { label: "Curry cut", searchQuery: "curry cut", reason: "Made for curry" },
-        { label: "Chicken legs", searchQuery: "chicken legs", reason: "Stays juicy" },
-        { label: "Boneless", searchQuery: "boneless", reason: "Extra meat" },
-      ],
+      suggestions: pick("curry", "leg", "boneless").map((entry, index) => ({
+        ...entry,
+        reason: ["Made for curry", "Stays juicy", "Extra meat"][index],
+      })),
     };
   }
   return {
     reply: `${message} with ${item} — about 250 g chicken per person.\n\n1. Pat the chicken dry and season with salt and spices.\n2. Heat a little oil in a pan on medium.\n3. Cook until golden and no pink remains inside.\n4. Rest a minute, then serve hot with rice or roti.`,
-    suggestions: [
-      { label: "Curry cut", searchQuery: "curry cut" },
-      { label: "Boneless", searchQuery: "boneless" },
-      { label: "Chicken legs", searchQuery: "chicken legs" },
-    ],
+    suggestions: pick("curry", "boneless", "leg"),
   };
 }
 
@@ -56,7 +61,8 @@ export const POST = handle(async (req) => {
     return [{ name, weight, qty: Number.isFinite(qty) ? qty : 1 }];
   });
   const item = cartItems[0]?.name || "your chicken";
-  const names = listProducts({ pageSize: "48" }).items.map((product) => product.name);
+  const catalogueProducts = listProducts({ pageSize: "48" }).items;
+  const names = catalogueProducts.map((product) => product.name);
   const cartSummary = cartItems.map((line) => `${line.name} ${line.weight} ×${line.qty}`).join(", ");
   const catalogue = names.join(", ") || "Curry Cut, Boneless Chicken, Chicken Breast, Chicken Legs, Chicken Liver, Chicken Gizzard";
   const format = `Return only JSON: {"reply":"...","suggestions":[{"label":"...","searchQuery":"...","reason":"..."}]}. Give 2 to 4 suggestions. Every suggestion must be a product from this list, with label and searchQuery set to the exact product name: ${catalogue}. Never put sides, vegetables, or non-catalogue items in suggestions — only shop chicken cuts. reason is under 8 words. In reply, use \\n for new lines between steps.`;
@@ -73,7 +79,13 @@ export const POST = handle(async (req) => {
     { maxTokens: 1600, json: true },
   );
 
-  let reply = fallbackReply(message, mode, item);
+  const catalogueSuggestions: Suggestion[] = catalogueProducts.map((product) => ({
+    label: product.name,
+    searchQuery: product.name,
+    productId: product.id,
+    variantId: product.defaultVariantId,
+  }));
+  let reply = fallbackReply(message, mode, item, catalogueSuggestions);
   if (raw) {
     try {
       const json = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
@@ -84,10 +96,18 @@ export const POST = handle(async (req) => {
         .slice(0, 4)
         .flatMap((entry) => {
           const wanted = cleanText(entry.searchQuery, 80) || cleanText(entry.label, 80);
-          const product = names.find((name) => name.toLowerCase() === wanted.toLowerCase());
+          const product = catalogueProducts.find((row) => row.name.toLowerCase() === wanted.toLowerCase());
           if (!product) return [];
           const reason = cleanText(entry.reason, 120);
-          return [{ label: product, searchQuery: product, ...(reason ? { reason } : {}) }];
+          return [
+            {
+              label: product.name,
+              searchQuery: product.name,
+              productId: product.id,
+              variantId: product.defaultVariantId,
+              ...(reason ? { reason } : {}),
+            },
+          ];
         });
       const text =
         typeof json.reply === "string"
@@ -100,7 +120,7 @@ export const POST = handle(async (req) => {
           : "";
       if (text) reply = { reply: text, suggestions: suggestions.length ? suggestions : reply.suggestions };
     } catch {
-      reply = fallbackReply(message, mode, item);
+      reply = fallbackReply(message, mode, item, catalogueSuggestions);
     }
   }
 

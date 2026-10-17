@@ -10,7 +10,13 @@ import { api, ApiClientError } from "@/lib/api-client";
 import { useShop } from "@/components/site/shop-context";
 
 type Mode = "cooking" | "gym";
-type Suggestion = { label: string; searchQuery: string; reason?: string };
+type Suggestion = {
+  label: string;
+  searchQuery: string;
+  reason?: string;
+  productId?: string | null;
+  variantId?: string | null;
+};
 
 const cookingChips = ["Chicken curry", "Biryani", "Fry", "Soup"];
 const gymChips = ["High protein", "Lean lunch", "Post-workout"];
@@ -22,7 +28,7 @@ export function openMealAssistant() {
 }
 
 export function MealAssistant() {
-  const { cart } = useShop();
+  const { cart, add } = useShop();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [prompted, setPrompted] = useState(false);
@@ -32,7 +38,20 @@ export function MealAssistant() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState("");
   const [error, setError] = useState("");
+
+  async function addSuggestion(item: Suggestion) {
+    if (!item.productId || !item.variantId || adding) return;
+    setAdding(item.productId);
+    try {
+      await add(item.productId, item.variantId, 1);
+    } catch {
+      /* toast already shown */
+    } finally {
+      setAdding("");
+    }
+  }
 
   useEffect(() => {
     function show(name: string, auto: boolean) {
@@ -181,11 +200,23 @@ export function MealAssistant() {
       {suggestions.length > 0 && (
         <ul className="mt-3 space-y-2">
           {suggestions.map((item) => (
-            <li key={item.searchQuery}>
-              <Link href={`/shop?q=${encodeURIComponent(item.searchQuery)}`} className="block rounded-xl border px-3 py-2 text-sm" onClick={() => setOpen(false)}>
-                <span className="font-medium">{item.label}</span>
-                {item.reason && <span className="mt-0.5 block text-xs text-muted-foreground">{item.reason}</span>}
-              </Link>
+            <li key={item.searchQuery} className="rounded-xl border px-3 py-2 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <Link href={`/shop?q=${encodeURIComponent(item.searchQuery)}`} className="min-w-0" onClick={() => setOpen(false)}>
+                  <span className="font-medium">{item.label}</span>
+                  {item.reason && <span className="mt-0.5 block text-xs text-muted-foreground">{item.reason}</span>}
+                </Link>
+                {item.productId && item.variantId && (
+                  <button
+                    type="button"
+                    disabled={adding === item.productId}
+                    onClick={() => void addSuggestion(item)}
+                    className="shrink-0 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
+                  >
+                    {adding === item.productId ? "…" : "Add"}
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

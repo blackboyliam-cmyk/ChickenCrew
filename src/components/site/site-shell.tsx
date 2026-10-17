@@ -836,10 +836,12 @@ function FooterList({ title, links }: { title: string; links: [string, string][]
 const HIDE_CART_BAR = ["/cart", "/checkout", "/product/", "/orders/", "/login", "/pay/"];
 
 function MobileCartBar() {
-  const { cart } = useShop();
+  const { cart, settings } = useShop();
   const pathname = usePathname();
   const count = cart?.count || 0;
   if (!count || HIDE_CART_BAR.some((path) => pathname.startsWith(path))) return null;
+  const threshold = settings.deliveryFee > 0 ? settings.freeDeliveryAbove : null;
+  const remaining = threshold != null && cart ? Math.max(0, threshold - cart.subtotal) : 0;
   return (
     <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 px-3 pb-2 md:hidden">
       <Link
@@ -853,6 +855,7 @@ function MobileCartBar() {
           <span className="leading-tight">
             <span className="block text-xs text-white/80">
               {count} {count === 1 ? "item" : "items"}
+              {remaining > 0 ? ` · ${formatINR(remaining)} to free delivery` : threshold != null ? " · Free delivery" : ""}
             </span>
             <span className="price block text-base font-bold">{formatINR(cart?.subtotal || 0)}</span>
           </span>

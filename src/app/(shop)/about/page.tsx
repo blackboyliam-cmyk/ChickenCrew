@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeIndianRupee, Clock, MapPin, ShieldCheck, Sparkles, Truck } from "lucide-react";
+import { BadgeIndianRupee, Clock, MapPin, ShieldCheck, Sparkles, Star, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHero } from "@/components/site/page-hero";
 import { getPublicSettings, withDb } from "@/lib/store";
 
-export const metadata: Metadata = { title: "About", alternates: { canonical: "/about" } };
+export const metadata: Metadata = {
+  title: "About",
+  description: "Fresh chicken cut to order and delivered locally. Learn about Karthika Chicken Centre and ChickenCrew.",
+  alternates: { canonical: "/about" },
+};
 
 const PROMISES = [
   { icon: Sparkles, title: "Cut fresh to order", body: "Your chicken is cleaned and cut after you order, not hours before." },
@@ -42,6 +46,7 @@ export default async function AboutPage() {
           <p className="flex items-center gap-2 font-bold">
             <Truck className="size-4 text-primary" /> Where we deliver
           </p>
+          <p className="mt-2 text-sm font-medium">Anywhere in Dombivili and Thakurli</p>
           {settings.servicePincodes.length ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {settings.servicePincodes.map((pin) => (
@@ -67,9 +72,24 @@ export default async function AboutPage() {
         </div>
       </section>
 
+      {settings.googleReviewsUrl && (
+        <a
+          href={settings.googleReviewsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-8 flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 text-sm shadow-card hover:border-primary/40 sm:mt-10"
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden />
+            Read our Google reviews
+          </span>
+          <span className="text-xs font-bold text-primary">Open →</span>
+        </a>
+      )}
+
       <section className="mt-8 flex flex-col items-stretch gap-3 rounded-3xl bg-primary/5 p-5 sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-6 md:p-8">
         <div>
-          <p className="text-lg font-extrabold">Ready for fresh chicken?</p>
+          <p className="text-lg font-extrabold">Ready for fresh chicken{settings.city ? ` in ${settings.city}` : ""}?</p>
           <p className="text-sm text-muted-foreground">Order now and pick a delivery slot that works for you.</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
